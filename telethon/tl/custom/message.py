@@ -240,7 +240,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         factcheck: Optional[types.TypeFactCheck] = None,
         report_delivery_until_date: Optional[datetime] = None,
         paid_message_stars: Optional[int] = None,
-        suggested_post: Optional[types.TypeSuggestedPost] = None,
+        #suggested_post: Optional[types.TypeSuggestedPost] = None,
         # Copied from MessageService.__init__ signature
         action: Optional[types.TypeMessageAction] = None,
         reactions_are_possible: Optional[bool] = None,
@@ -289,7 +289,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.factcheck = factcheck
         self.report_delivery_until_date = report_delivery_until_date
         self.paid_message_stars = paid_message_stars
-        self.suggested_post = suggested_post
+        #self.suggested_post = suggested_post
         # Copied from MessageService.__init__ body
         self.action = action
         self.reactions_are_possible = reactions_are_possible
