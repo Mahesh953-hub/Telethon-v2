@@ -786,8 +786,8 @@ def sanitize_parse_mode(mode):
             return {
                 'md': markdown,
                 'markdown': markdown,
-                'mdv2': markdownv2(), # A custom Parser
-                'v2': markdownv2(), 
+                'mdv2': markdownv2.Markdown(), # A custom Parser
+                'v2': markdownv2.Markdown(), 
                 'htm': html,
                 'html': html
             }[mode.lower()]
