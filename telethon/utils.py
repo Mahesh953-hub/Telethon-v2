@@ -19,7 +19,7 @@ from collections import namedtuple
 from mimetypes import guess_extension
 from types import GeneratorType
 
-from .extensions import markdown, html
+from .extensions import markdown, html, markdownv2
 from .helpers import add_surrogate, del_surrogate, strip_text
 from .tl import types
 
@@ -786,6 +786,8 @@ def sanitize_parse_mode(mode):
             return {
                 'md': markdown,
                 'markdown': markdown,
+                'mdv2': markdownv2(), # A custom Parser
+                'v2': markdownv2(), 
                 'htm': html,
                 'html': html
             }[mode.lower()]
