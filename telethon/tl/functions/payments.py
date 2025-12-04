@@ -6,7 +6,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeDataJSON, TypeInputCheckPasswordSRP, TypeInputInvoice, TypeInputMedia, TypeInputPaymentCredentials, TypeInputPeer, TypeInputSavedStarGift, TypeInputStarsTransaction, TypeInputStorePaymentPurpose, TypeInputUser, TypePaymentRequestedInfo, TypeStarGiftAttributeId, TypeStarsAmount
+    from ...tl.types import TypeDataJSON, TypeInputCheckPasswordSRP, TypeInputInvoice, TypeInputMedia, TypeInputPaymentCredentials, TypeInputPeer, TypeInputSavedStarGift, TypeInputStarGiftAuction, TypeInputStarsTransaction, TypeInputStorePaymentPurpose, TypeInputUser, TypePaymentRequestedInfo, TypeStarGiftAttributeId, TypeStarsAmount
 
 
 
@@ -1008,6 +1008,94 @@ class GetSavedStarGiftsRequest(TLRequest):
         _offset = reader.tgread_string()
         _limit = reader.read_int()
         return cls(peer=_peer, offset=_offset, limit=_limit, exclude_unsaved=_exclude_unsaved, exclude_saved=_exclude_saved, exclude_unlimited=_exclude_unlimited, exclude_unique=_exclude_unique, sort_by_value=_sort_by_value, exclude_upgradable=_exclude_upgradable, exclude_unupgradable=_exclude_unupgradable, peer_color_available=_peer_color_available, exclude_hosted=_exclude_hosted, collection_id=_collection_id)
+
+
+class GetStarGiftActiveAuctionsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0xa5d0514d
+    SUBCLASS_OF_ID = 0x917dd0c7
+
+    def __init__(self, hash: int):
+        """
+        :returns payments.StarGiftActiveAuctions: Instance of either StarGiftActiveAuctionsNotModified, StarGiftActiveAuctions.
+        """
+        self.hash = hash
+
+    def to_dict(self):
+        return {
+            '_': 'GetStarGiftActiveAuctionsRequest',
+            'hash': self.hash
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'MQ\xd0\xa5',
+            struct.pack('<q', self.hash),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _hash = reader.read_long()
+        return cls(hash=_hash)
+
+
+class GetStarGiftAuctionAcquiredGiftsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x6ba2cbec
+    SUBCLASS_OF_ID = 0xa7080a1b
+
+    def __init__(self, gift_id: int):
+        """
+        :returns payments.StarGiftAuctionAcquiredGifts: Instance of StarGiftAuctionAcquiredGifts.
+        """
+        self.gift_id = gift_id
+
+    def to_dict(self):
+        return {
+            '_': 'GetStarGiftAuctionAcquiredGiftsRequest',
+            'gift_id': self.gift_id
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xec\xcb\xa2k',
+            struct.pack('<q', self.gift_id),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _gift_id = reader.read_long()
+        return cls(gift_id=_gift_id)
+
+
+class GetStarGiftAuctionStateRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x5c9ff4d6
+    SUBCLASS_OF_ID = 0x1a318599
+
+    def __init__(self, auction: 'TypeInputStarGiftAuction', version: int):
+        """
+        :returns payments.StarGiftAuctionState: Instance of StarGiftAuctionState.
+        """
+        self.auction = auction
+        self.version = version
+
+    def to_dict(self):
+        return {
+            '_': 'GetStarGiftAuctionStateRequest',
+            'auction': self.auction.to_dict() if isinstance(self.auction, TLObject) else self.auction,
+            'version': self.version
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xd6\xf4\x9f\\',
+            self.auction._bytes(),
+            struct.pack('<i', self.version),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _auction = reader.tgread_object()
+        _version = reader.read_int()
+        return cls(auction=_auction, version=_version)
 
 
 class GetStarGiftCollectionsRequest(TLRequest):

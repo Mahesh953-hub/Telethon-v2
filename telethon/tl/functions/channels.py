@@ -1089,12 +1089,13 @@ class GetSendAsRequest(TLRequest):
     CONSTRUCTOR_ID = 0xe785a43f
     SUBCLASS_OF_ID = 0x38cb8d21
 
-    def __init__(self, peer: 'TypeInputPeer', for_paid_reactions: Optional[bool]=None):
+    def __init__(self, peer: 'TypeInputPeer', for_paid_reactions: Optional[bool]=None, for_live_stories: Optional[bool]=None):
         """
         :returns channels.SendAsPeers: Instance of SendAsPeers.
         """
         self.peer = peer
         self.for_paid_reactions = for_paid_reactions
+        self.for_live_stories = for_live_stories
 
     async def resolve(self, client, utils):
         self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
@@ -1103,13 +1104,14 @@ class GetSendAsRequest(TLRequest):
         return {
             '_': 'GetSendAsRequest',
             'peer': self.peer.to_dict() if isinstance(self.peer, TLObject) else self.peer,
-            'for_paid_reactions': self.for_paid_reactions
+            'for_paid_reactions': self.for_paid_reactions,
+            'for_live_stories': self.for_live_stories
         }
 
     def _bytes(self):
         return b''.join((
             b'?\xa4\x85\xe7',
-            struct.pack('<I', (0 if self.for_paid_reactions is None or self.for_paid_reactions is False else 1)),
+            struct.pack('<I', (0 if self.for_paid_reactions is None or self.for_paid_reactions is False else 1) | (0 if self.for_live_stories is None or self.for_live_stories is False else 2)),
             self.peer._bytes(),
         ))
 
@@ -1118,8 +1120,9 @@ class GetSendAsRequest(TLRequest):
         flags = reader.read_int()
 
         _for_paid_reactions = bool(flags & 1)
+        _for_live_stories = bool(flags & 2)
         _peer = reader.tgread_object()
-        return cls(peer=_peer, for_paid_reactions=_for_paid_reactions)
+        return cls(peer=_peer, for_paid_reactions=_for_paid_reactions, for_live_stories=_for_live_stories)
 
 
 class InviteToChannelRequest(TLRequest):

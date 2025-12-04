@@ -329,6 +329,94 @@ class DeleteConferenceCallParticipantsRequest(TLRequest):
         return cls(call=_call, ids=_ids, block=_block, only_left=_only_left, kick=_kick)
 
 
+class DeleteGroupCallMessagesRequest(TLRequest):
+    CONSTRUCTOR_ID = 0xf64f54f7
+    SUBCLASS_OF_ID = 0x8af52aac
+
+    def __init__(self, call: 'TypeInputGroupCall', messages: List[int], report_spam: Optional[bool]=None):
+        """
+        :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
+        """
+        self.call = call
+        self.messages = messages
+        self.report_spam = report_spam
+
+    async def resolve(self, client, utils):
+        self.call = utils.get_input_group_call(self.call)
+
+    def to_dict(self):
+        return {
+            '_': 'DeleteGroupCallMessagesRequest',
+            'call': self.call.to_dict() if isinstance(self.call, TLObject) else self.call,
+            'messages': [] if self.messages is None else self.messages[:],
+            'report_spam': self.report_spam
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xf7TO\xf6',
+            struct.pack('<I', (0 if self.report_spam is None or self.report_spam is False else 1)),
+            self.call._bytes(),
+            b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.messages)),b''.join(struct.pack('<i', x) for x in self.messages),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _report_spam = bool(flags & 1)
+        _call = reader.tgread_object()
+        reader.read_int()
+        _messages = []
+        for _ in range(reader.read_int()):
+            _x = reader.read_int()
+            _messages.append(_x)
+
+        return cls(call=_call, messages=_messages, report_spam=_report_spam)
+
+
+class DeleteGroupCallParticipantMessagesRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x1dbfeca0
+    SUBCLASS_OF_ID = 0x8af52aac
+
+    def __init__(self, call: 'TypeInputGroupCall', participant: 'TypeInputPeer', report_spam: Optional[bool]=None):
+        """
+        :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
+        """
+        self.call = call
+        self.participant = participant
+        self.report_spam = report_spam
+
+    async def resolve(self, client, utils):
+        self.call = utils.get_input_group_call(self.call)
+        self.participant = utils.get_input_peer(await client.get_input_entity(self.participant))
+
+    def to_dict(self):
+        return {
+            '_': 'DeleteGroupCallParticipantMessagesRequest',
+            'call': self.call.to_dict() if isinstance(self.call, TLObject) else self.call,
+            'participant': self.participant.to_dict() if isinstance(self.participant, TLObject) else self.participant,
+            'report_spam': self.report_spam
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xa0\xec\xbf\x1d',
+            struct.pack('<I', (0 if self.report_spam is None or self.report_spam is False else 1)),
+            self.call._bytes(),
+            self.participant._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _report_spam = bool(flags & 1)
+        _call = reader.tgread_object()
+        _participant = reader.tgread_object()
+        return cls(call=_call, participant=_participant, report_spam=_report_spam)
+
+
 class DiscardCallRequest(TLRequest):
     CONSTRUCTOR_ID = 0xb2cbc1c0
     SUBCLASS_OF_ID = 0x8af52aac
@@ -687,6 +775,37 @@ class GetGroupCallJoinAsRequest(TLRequest):
         return cls(peer=_peer)
 
 
+class GetGroupCallStarsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x6f636302
+    SUBCLASS_OF_ID = 0xb447801a
+
+    def __init__(self, call: 'TypeInputGroupCall'):
+        """
+        :returns phone.GroupCallStars: Instance of GroupCallStars.
+        """
+        self.call = call
+
+    async def resolve(self, client, utils):
+        self.call = utils.get_input_group_call(self.call)
+
+    def to_dict(self):
+        return {
+            '_': 'GetGroupCallStarsRequest',
+            'call': self.call.to_dict() if isinstance(self.call, TLObject) else self.call
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\x02cco',
+            self.call._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _call = reader.tgread_object()
+        return cls(call=_call)
+
+
 class GetGroupCallStreamChannelsRequest(TLRequest):
     CONSTRUCTOR_ID = 0x1ab21940
     SUBCLASS_OF_ID = 0x9157c5e4
@@ -719,15 +838,16 @@ class GetGroupCallStreamChannelsRequest(TLRequest):
 
 
 class GetGroupCallStreamRtmpUrlRequest(TLRequest):
-    CONSTRUCTOR_ID = 0xdeb3abbf
+    CONSTRUCTOR_ID = 0x5af4c73a
     SUBCLASS_OF_ID = 0xd1f515cb
 
-    def __init__(self, peer: 'TypeInputPeer', revoke: bool):
+    def __init__(self, peer: 'TypeInputPeer', revoke: bool, live_story: Optional[bool]=None):
         """
         :returns phone.GroupCallStreamRtmpUrl: Instance of GroupCallStreamRtmpUrl.
         """
         self.peer = peer
         self.revoke = revoke
+        self.live_story = live_story
 
     async def resolve(self, client, utils):
         self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
@@ -736,21 +856,26 @@ class GetGroupCallStreamRtmpUrlRequest(TLRequest):
         return {
             '_': 'GetGroupCallStreamRtmpUrlRequest',
             'peer': self.peer.to_dict() if isinstance(self.peer, TLObject) else self.peer,
-            'revoke': self.revoke
+            'revoke': self.revoke,
+            'live_story': self.live_story
         }
 
     def _bytes(self):
         return b''.join((
-            b'\xbf\xab\xb3\xde',
+            b':\xc7\xf4Z',
+            struct.pack('<I', (0 if self.live_story is None or self.live_story is False else 1)),
             self.peer._bytes(),
             b'\xb5ur\x99' if self.revoke else b'7\x97y\xbc',
         ))
 
     @classmethod
     def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _live_story = bool(flags & 1)
         _peer = reader.tgread_object()
         _revoke = reader.tgread_bool()
-        return cls(peer=_peer, revoke=_revoke)
+        return cls(peer=_peer, revoke=_revoke, live_story=_live_story)
 
 
 class GetGroupParticipantsRequest(TLRequest):
@@ -1251,6 +1376,42 @@ class SaveDefaultGroupCallJoinAsRequest(TLRequest):
         return cls(peer=_peer, join_as=_join_as)
 
 
+class SaveDefaultSendAsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x4167add1
+    SUBCLASS_OF_ID = 0xf5b399ac
+
+    def __init__(self, call: 'TypeInputGroupCall', send_as: 'TypeInputPeer'):
+        """
+        :returns Bool: This type has no constructors.
+        """
+        self.call = call
+        self.send_as = send_as
+
+    async def resolve(self, client, utils):
+        self.call = utils.get_input_group_call(self.call)
+        self.send_as = utils.get_input_peer(await client.get_input_entity(self.send_as))
+
+    def to_dict(self):
+        return {
+            '_': 'SaveDefaultSendAsRequest',
+            'call': self.call.to_dict() if isinstance(self.call, TLObject) else self.call,
+            'send_as': self.send_as.to_dict() if isinstance(self.send_as, TLObject) else self.send_as
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xd1\xadgA',
+            self.call._bytes(),
+            self.send_as._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _call = reader.tgread_object()
+        _send_as = reader.tgread_object()
+        return cls(call=_call, send_as=_send_as)
+
+
 class SendConferenceCallBroadcastRequest(TLRequest):
     CONSTRUCTOR_ID = 0xc6701900
     SUBCLASS_OF_ID = 0x8af52aac
@@ -1322,42 +1483,61 @@ class SendGroupCallEncryptedMessageRequest(TLRequest):
 
 
 class SendGroupCallMessageRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x87893014
-    SUBCLASS_OF_ID = 0xf5b399ac
+    CONSTRUCTOR_ID = 0xb1d11410
+    SUBCLASS_OF_ID = 0x8af52aac
 
-    def __init__(self, call: 'TypeInputGroupCall', message: 'TypeTextWithEntities', random_id: int=None):
+    def __init__(self, call: 'TypeInputGroupCall', message: 'TypeTextWithEntities', random_id: int=None, allow_paid_stars: Optional[int]=None, send_as: Optional['TypeInputPeer']=None):
         """
-        :returns Bool: This type has no constructors.
+        :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
         """
         self.call = call
         self.message = message
         self.random_id = random_id if random_id is not None else int.from_bytes(os.urandom(8), 'big', signed=True)
+        self.allow_paid_stars = allow_paid_stars
+        self.send_as = send_as
 
     async def resolve(self, client, utils):
         self.call = utils.get_input_group_call(self.call)
+        if self.send_as:
+            self.send_as = utils.get_input_peer(await client.get_input_entity(self.send_as))
 
     def to_dict(self):
         return {
             '_': 'SendGroupCallMessageRequest',
             'call': self.call.to_dict() if isinstance(self.call, TLObject) else self.call,
             'message': self.message.to_dict() if isinstance(self.message, TLObject) else self.message,
-            'random_id': self.random_id
+            'random_id': self.random_id,
+            'allow_paid_stars': self.allow_paid_stars,
+            'send_as': self.send_as.to_dict() if isinstance(self.send_as, TLObject) else self.send_as
         }
 
     def _bytes(self):
         return b''.join((
-            b'\x140\x89\x87',
+            b'\x10\x14\xd1\xb1',
+            struct.pack('<I', (0 if self.allow_paid_stars is None or self.allow_paid_stars is False else 1) | (0 if self.send_as is None or self.send_as is False else 2)),
             self.call._bytes(),
             struct.pack('<q', self.random_id),
             self.message._bytes(),
+            b'' if self.allow_paid_stars is None or self.allow_paid_stars is False else (struct.pack('<q', self.allow_paid_stars)),
+            b'' if self.send_as is None or self.send_as is False else (self.send_as._bytes()),
         ))
 
     @classmethod
     def from_reader(cls, reader):
+        flags = reader.read_int()
+
         _call = reader.tgread_object()
         _random_id = reader.read_long()
         _message = reader.tgread_object()
-        return cls(call=_call, message=_message, random_id=_random_id)
+        if flags & 1:
+            _allow_paid_stars = reader.read_long()
+        else:
+            _allow_paid_stars = None
+        if flags & 2:
+            _send_as = reader.tgread_object()
+        else:
+            _send_as = None
+        return cls(call=_call, message=_message, random_id=_random_id, allow_paid_stars=_allow_paid_stars, send_as=_send_as)
 
 
 class SendSignalingDataRequest(TLRequest):
@@ -1521,10 +1701,10 @@ class ToggleGroupCallRecordRequest(TLRequest):
 
 
 class ToggleGroupCallSettingsRequest(TLRequest):
-    CONSTRUCTOR_ID = 0xe9723804
+    CONSTRUCTOR_ID = 0x974392f2
     SUBCLASS_OF_ID = 0x8af52aac
 
-    def __init__(self, call: 'TypeInputGroupCall', reset_invite_hash: Optional[bool]=None, join_muted: Optional[bool]=None, messages_enabled: Optional[bool]=None):
+    def __init__(self, call: 'TypeInputGroupCall', reset_invite_hash: Optional[bool]=None, join_muted: Optional[bool]=None, messages_enabled: Optional[bool]=None, send_paid_messages_stars: Optional[int]=None):
         """
         :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
         """
@@ -1532,6 +1712,7 @@ class ToggleGroupCallSettingsRequest(TLRequest):
         self.reset_invite_hash = reset_invite_hash
         self.join_muted = join_muted
         self.messages_enabled = messages_enabled
+        self.send_paid_messages_stars = send_paid_messages_stars
 
     async def resolve(self, client, utils):
         self.call = utils.get_input_group_call(self.call)
@@ -1542,16 +1723,18 @@ class ToggleGroupCallSettingsRequest(TLRequest):
             'call': self.call.to_dict() if isinstance(self.call, TLObject) else self.call,
             'reset_invite_hash': self.reset_invite_hash,
             'join_muted': self.join_muted,
-            'messages_enabled': self.messages_enabled
+            'messages_enabled': self.messages_enabled,
+            'send_paid_messages_stars': self.send_paid_messages_stars
         }
 
     def _bytes(self):
         return b''.join((
-            b'\x048r\xe9',
-            struct.pack('<I', (0 if self.reset_invite_hash is None or self.reset_invite_hash is False else 2) | (0 if self.join_muted is None else 1) | (0 if self.messages_enabled is None else 4)),
+            b'\xf2\x92C\x97',
+            struct.pack('<I', (0 if self.reset_invite_hash is None or self.reset_invite_hash is False else 2) | (0 if self.join_muted is None else 1) | (0 if self.messages_enabled is None else 4) | (0 if self.send_paid_messages_stars is None or self.send_paid_messages_stars is False else 8)),
             self.call._bytes(),
             b'' if self.join_muted is None else (b'\xb5ur\x99' if self.join_muted else b'7\x97y\xbc'),
             b'' if self.messages_enabled is None else (b'\xb5ur\x99' if self.messages_enabled else b'7\x97y\xbc'),
+            b'' if self.send_paid_messages_stars is None or self.send_paid_messages_stars is False else (struct.pack('<q', self.send_paid_messages_stars)),
         ))
 
     @classmethod
@@ -1568,7 +1751,11 @@ class ToggleGroupCallSettingsRequest(TLRequest):
             _messages_enabled = reader.tgread_bool()
         else:
             _messages_enabled = None
-        return cls(call=_call, reset_invite_hash=_reset_invite_hash, join_muted=_join_muted, messages_enabled=_messages_enabled)
+        if flags & 8:
+            _send_paid_messages_stars = reader.read_long()
+        else:
+            _send_paid_messages_stars = None
+        return cls(call=_call, reset_invite_hash=_reset_invite_hash, join_muted=_join_muted, messages_enabled=_messages_enabled, send_paid_messages_stars=_send_paid_messages_stars)
 
 
 class ToggleGroupCallStartSubscriptionRequest(TLRequest):

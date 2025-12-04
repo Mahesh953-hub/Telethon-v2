@@ -5,7 +5,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeChat, TypeGroupCall, TypeGroupCallParticipant, TypeGroupCallStreamChannel, TypePeer, TypePhoneCall, TypeUser
+    from ...tl.types import TypeChat, TypeGroupCall, TypeGroupCallDonor, TypeGroupCallParticipant, TypeGroupCallStreamChannel, TypePeer, TypePhoneCall, TypeUser
 
 
 
@@ -94,6 +94,61 @@ class GroupCall(TLObject):
             _users.append(_x)
 
         return cls(call=_call, participants=_participants, participants_next_offset=_participants_next_offset, chats=_chats, users=_users)
+
+
+class GroupCallStars(TLObject):
+    CONSTRUCTOR_ID = 0x9d1dbd26
+    SUBCLASS_OF_ID = 0xb447801a
+
+    def __init__(self, total_stars: int, top_donors: List['TypeGroupCallDonor'], chats: List['TypeChat'], users: List['TypeUser']):
+        """
+        Constructor for phone.GroupCallStars: Instance of GroupCallStars.
+        """
+        self.total_stars = total_stars
+        self.top_donors = top_donors
+        self.chats = chats
+        self.users = users
+
+    def to_dict(self):
+        return {
+            '_': 'GroupCallStars',
+            'total_stars': self.total_stars,
+            'top_donors': [] if self.top_donors is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.top_donors],
+            'chats': [] if self.chats is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.chats],
+            'users': [] if self.users is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.users]
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'&\xbd\x1d\x9d',
+            struct.pack('<q', self.total_stars),
+            b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.top_donors)),b''.join(x._bytes() for x in self.top_donors),
+            b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.chats)),b''.join(x._bytes() for x in self.chats),
+            b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.users)),b''.join(x._bytes() for x in self.users),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _total_stars = reader.read_long()
+        reader.read_int()
+        _top_donors = []
+        for _ in range(reader.read_int()):
+            _x = reader.tgread_object()
+            _top_donors.append(_x)
+
+        reader.read_int()
+        _chats = []
+        for _ in range(reader.read_int()):
+            _x = reader.tgread_object()
+            _chats.append(_x)
+
+        reader.read_int()
+        _users = []
+        for _ in range(reader.read_int()):
+            _x = reader.tgread_object()
+            _users.append(_x)
+
+        return cls(total_stars=_total_stars, top_donors=_top_donors, chats=_chats, users=_users)
 
 
 class GroupCallStreamChannels(TLObject):

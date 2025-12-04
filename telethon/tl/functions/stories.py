@@ -481,12 +481,12 @@ class GetChatsToSendRequest(TLRequest):
 
 
 class GetPeerMaxIDsRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x535983c3
-    SUBCLASS_OF_ID = 0x5026710f
+    CONSTRUCTOR_ID = 0x78499170
+    SUBCLASS_OF_ID = 0x3cb69156
 
     def __init__(self, id: List['TypeInputPeer']):
         """
-        :returns Vector<int>: This type has no constructors.
+        :returns Vector<RecentStory>: This type has no constructors.
         """
         self.id = id
 
@@ -505,7 +505,7 @@ class GetPeerMaxIDsRequest(TLRequest):
 
     def _bytes(self):
         return b''.join((
-            b'\xc3\x83YS',
+            b'p\x91Ix',
             b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.id)),b''.join(x._bytes() for x in self.id),
         ))
 
@@ -518,11 +518,6 @@ class GetPeerMaxIDsRequest(TLRequest):
             _id.append(_x)
 
         return cls(id=_id)
-
-    @staticmethod
-    def read_result(reader):
-        reader.read_int()  # Vector ID
-        return [reader.read_int() for _ in range(reader.read_int())]
 
 
 class GetPeerStoriesRequest(TLRequest):
@@ -1234,6 +1229,95 @@ class SendStoryRequest(TLRequest):
         else:
             _albums = None
         return cls(peer=_peer, media=_media, privacy_rules=_privacy_rules, pinned=_pinned, noforwards=_noforwards, fwd_modified=_fwd_modified, media_areas=_media_areas, caption=_caption, entities=_entities, random_id=_random_id, period=_period, fwd_from_id=_fwd_from_id, fwd_from_story=_fwd_from_story, albums=_albums)
+
+
+class StartLiveRequest(TLRequest):
+    CONSTRUCTOR_ID = 0xd069ccde
+    SUBCLASS_OF_ID = 0x8af52aac
+
+    def __init__(self, peer: 'TypeInputPeer', privacy_rules: List['TypeInputPrivacyRule'], pinned: Optional[bool]=None, noforwards: Optional[bool]=None, rtmp_stream: Optional[bool]=None, caption: Optional[str]=None, entities: Optional[List['TypeMessageEntity']]=None, random_id: int=None, messages_enabled: Optional[bool]=None, send_paid_messages_stars: Optional[int]=None):
+        """
+        :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
+        """
+        self.peer = peer
+        self.privacy_rules = privacy_rules
+        self.pinned = pinned
+        self.noforwards = noforwards
+        self.rtmp_stream = rtmp_stream
+        self.caption = caption
+        self.entities = entities
+        self.random_id = random_id if random_id is not None else int.from_bytes(os.urandom(8), 'big', signed=True)
+        self.messages_enabled = messages_enabled
+        self.send_paid_messages_stars = send_paid_messages_stars
+
+    async def resolve(self, client, utils):
+        self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
+
+    def to_dict(self):
+        return {
+            '_': 'StartLiveRequest',
+            'peer': self.peer.to_dict() if isinstance(self.peer, TLObject) else self.peer,
+            'privacy_rules': [] if self.privacy_rules is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.privacy_rules],
+            'pinned': self.pinned,
+            'noforwards': self.noforwards,
+            'rtmp_stream': self.rtmp_stream,
+            'caption': self.caption,
+            'entities': [] if self.entities is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.entities],
+            'random_id': self.random_id,
+            'messages_enabled': self.messages_enabled,
+            'send_paid_messages_stars': self.send_paid_messages_stars
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xde\xcci\xd0',
+            struct.pack('<I', (0 if self.pinned is None or self.pinned is False else 4) | (0 if self.noforwards is None or self.noforwards is False else 16) | (0 if self.rtmp_stream is None or self.rtmp_stream is False else 32) | (0 if self.caption is None or self.caption is False else 1) | (0 if self.entities is None or self.entities is False else 2) | (0 if self.messages_enabled is None else 64) | (0 if self.send_paid_messages_stars is None or self.send_paid_messages_stars is False else 128)),
+            self.peer._bytes(),
+            b'' if self.caption is None or self.caption is False else (self.serialize_bytes(self.caption)),
+            b'' if self.entities is None or self.entities is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.entities)),b''.join(x._bytes() for x in self.entities))),
+            b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.privacy_rules)),b''.join(x._bytes() for x in self.privacy_rules),
+            struct.pack('<q', self.random_id),
+            b'' if self.messages_enabled is None else (b'\xb5ur\x99' if self.messages_enabled else b'7\x97y\xbc'),
+            b'' if self.send_paid_messages_stars is None or self.send_paid_messages_stars is False else (struct.pack('<q', self.send_paid_messages_stars)),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _pinned = bool(flags & 4)
+        _noforwards = bool(flags & 16)
+        _rtmp_stream = bool(flags & 32)
+        _peer = reader.tgread_object()
+        if flags & 1:
+            _caption = reader.tgread_string()
+        else:
+            _caption = None
+        if flags & 2:
+            reader.read_int()
+            _entities = []
+            for _ in range(reader.read_int()):
+                _x = reader.tgread_object()
+                _entities.append(_x)
+
+        else:
+            _entities = None
+        reader.read_int()
+        _privacy_rules = []
+        for _ in range(reader.read_int()):
+            _x = reader.tgread_object()
+            _privacy_rules.append(_x)
+
+        _random_id = reader.read_long()
+        if flags & 64:
+            _messages_enabled = reader.tgread_bool()
+        else:
+            _messages_enabled = None
+        if flags & 128:
+            _send_paid_messages_stars = reader.read_long()
+        else:
+            _send_paid_messages_stars = None
+        return cls(peer=_peer, privacy_rules=_privacy_rules, pinned=_pinned, noforwards=_noforwards, rtmp_stream=_rtmp_stream, caption=_caption, entities=_entities, random_id=_random_id, messages_enabled=_messages_enabled, send_paid_messages_stars=_send_paid_messages_stars)
 
 
 class ToggleAllStoriesHiddenRequest(TLRequest):
