@@ -1,3 +1,4 @@
 # Versions should comply with PEP440.
 # This line is parsed in setup.py:
-__version__ = '1.40.0'
+# @AgainOwner
+__version__ = '1.42.0'
