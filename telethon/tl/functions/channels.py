@@ -6,7 +6,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeChannelAdminLogEventsFilter, TypeChannelParticipantsFilter, TypeChatAdminRights, TypeChatBannedRights, TypeEmojiStatus, TypeInputChannel, TypeInputChatPhoto, TypeInputCheckPasswordSRP, TypeInputGeoPoint, TypeInputMessage, TypeInputPeer, TypeInputStickerSet, TypeInputUser, TypeProfileTab
+    from ...tl.types import TypeChannelAdminLogEventsFilter, TypeChannelParticipantsFilter, TypeChatAdminRights, TypeChatBannedRights, TypeEmojiStatus, TypeInputChannel, TypeInputChatPhoto, TypeInputGeoPoint, TypeInputMessage, TypeInputPeer, TypeInputStickerSet, TypeInputUser, TypeProfileTab
 
 
 
@@ -359,10 +359,10 @@ class DeleteParticipantHistoryRequest(TLRequest):
 
 
 class EditAdminRequest(TLRequest):
-    CONSTRUCTOR_ID = 0xd33c8902
+    CONSTRUCTOR_ID = 0x9a98ad68
     SUBCLASS_OF_ID = 0x8af52aac
 
-    def __init__(self, channel: 'TypeInputChannel', user_id: 'TypeInputUser', admin_rights: 'TypeChatAdminRights', rank: str):
+    def __init__(self, channel: 'TypeInputChannel', user_id: 'TypeInputUser', admin_rights: 'TypeChatAdminRights', rank: Optional[str]=None):
         """
         :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
         """
@@ -386,19 +386,25 @@ class EditAdminRequest(TLRequest):
 
     def _bytes(self):
         return b''.join((
-            b'\x02\x89<\xd3',
+            b'h\xad\x98\x9a',
+            struct.pack('<I', (0 if self.rank is None or self.rank is False else 1)),
             self.channel._bytes(),
             self.user_id._bytes(),
             self.admin_rights._bytes(),
-            self.serialize_bytes(self.rank),
+            b'' if self.rank is None or self.rank is False else (self.serialize_bytes(self.rank)),
         ))
 
     @classmethod
     def from_reader(cls, reader):
+        flags = reader.read_int()
+
         _channel = reader.tgread_object()
         _user_id = reader.tgread_object()
         _admin_rights = reader.tgread_object()
-        _rank = reader.tgread_string()
+        if flags & 1:
+            _rank = reader.tgread_string()
+        else:
+            _rank = None
         return cls(channel=_channel, user_id=_user_id, admin_rights=_admin_rights, rank=_rank)
 
 
@@ -440,46 +446,6 @@ class EditBannedRequest(TLRequest):
         _participant = reader.tgread_object()
         _banned_rights = reader.tgread_object()
         return cls(channel=_channel, participant=_participant, banned_rights=_banned_rights)
-
-
-class EditCreatorRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x8f38cd1f
-    SUBCLASS_OF_ID = 0x8af52aac
-
-    def __init__(self, channel: 'TypeInputChannel', user_id: 'TypeInputUser', password: 'TypeInputCheckPasswordSRP'):
-        """
-        :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
-        """
-        self.channel = channel
-        self.user_id = user_id
-        self.password = password
-
-    async def resolve(self, client, utils):
-        self.channel = utils.get_input_channel(await client.get_input_entity(self.channel))
-        self.user_id = utils.get_input_user(await client.get_input_entity(self.user_id))
-
-    def to_dict(self):
-        return {
-            '_': 'EditCreatorRequest',
-            'channel': self.channel.to_dict() if isinstance(self.channel, TLObject) else self.channel,
-            'user_id': self.user_id.to_dict() if isinstance(self.user_id, TLObject) else self.user_id,
-            'password': self.password.to_dict() if isinstance(self.password, TLObject) else self.password
-        }
-
-    def _bytes(self):
-        return b''.join((
-            b'\x1f\xcd8\x8f',
-            self.channel._bytes(),
-            self.user_id._bytes(),
-            self.password._bytes(),
-        ))
-
-    @classmethod
-    def from_reader(cls, reader):
-        _channel = reader.tgread_object()
-        _user_id = reader.tgread_object()
-        _password = reader.tgread_object()
-        return cls(channel=_channel, user_id=_user_id, password=_password)
 
 
 class EditLocationRequest(TLRequest):

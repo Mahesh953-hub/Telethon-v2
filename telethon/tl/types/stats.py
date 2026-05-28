@@ -270,6 +270,34 @@ class MessageStats(TLObject):
         return cls(views_graph=_views_graph, reactions_by_emotion_graph=_reactions_by_emotion_graph)
 
 
+class PollStats(TLObject):
+    CONSTRUCTOR_ID = 0x2999beed
+    SUBCLASS_OF_ID = 0xe95194cf
+
+    def __init__(self, votes_graph: 'TypeStatsGraph'):
+        """
+        Constructor for stats.PollStats: Instance of PollStats.
+        """
+        self.votes_graph = votes_graph
+
+    def to_dict(self):
+        return {
+            '_': 'PollStats',
+            'votes_graph': self.votes_graph.to_dict() if isinstance(self.votes_graph, TLObject) else self.votes_graph
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xed\xbe\x99)',
+            self.votes_graph._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _votes_graph = reader.tgread_object()
+        return cls(votes_graph=_votes_graph)
+
+
 class PublicForwards(TLObject):
     CONSTRUCTOR_ID = 0x93037e20
     SUBCLASS_OF_ID = 0xa7283211

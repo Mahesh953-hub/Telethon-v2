@@ -5,7 +5,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeUser
+    from ...tl.types import TypeDataJSON, TypeUser
     from ...tl.types.help import TypeTermsOfService
     from ...tl.types.auth import TypeAuthorization, TypeCodeType, TypeSentCodeType
 
@@ -354,6 +354,34 @@ class LoginTokenSuccess(TLObject):
         return cls(authorization=_authorization)
 
 
+class PasskeyLoginOptions(TLObject):
+    CONSTRUCTOR_ID = 0xe2037789
+    SUBCLASS_OF_ID = 0xd9793032
+
+    def __init__(self, options: 'TypeDataJSON'):
+        """
+        Constructor for auth.PasskeyLoginOptions: Instance of PasskeyLoginOptions.
+        """
+        self.options = options
+
+    def to_dict(self):
+        return {
+            '_': 'PasskeyLoginOptions',
+            'options': self.options.to_dict() if isinstance(self.options, TLObject) else self.options
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\x89w\x03\xe2',
+            self.options._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _options = reader.tgread_object()
+        return cls(options=_options)
+
+
 class PasswordRecovery(TLObject):
     CONSTRUCTOR_ID = 0x137948a5
     SUBCLASS_OF_ID = 0xfa72d43a
@@ -432,10 +460,10 @@ class SentCode(TLObject):
 
 
 class SentCodePaymentRequired(TLObject):
-    CONSTRUCTOR_ID = 0xe0955a3c
+    CONSTRUCTOR_ID = 0xf8827ebf
     SUBCLASS_OF_ID = 0x6ce87081
 
-    def __init__(self, store_product: str, phone_code_hash: str, support_email_address: str, support_email_subject: str, currency: str, amount: int):
+    def __init__(self, store_product: str, phone_code_hash: str, support_email_address: str, support_email_subject: str, premium_days: int, currency: str, amount: int):
         """
         Constructor for auth.SentCode: Instance of either SentCode, SentCodeSuccess, SentCodePaymentRequired.
         """
@@ -443,6 +471,7 @@ class SentCodePaymentRequired(TLObject):
         self.phone_code_hash = phone_code_hash
         self.support_email_address = support_email_address
         self.support_email_subject = support_email_subject
+        self.premium_days = premium_days
         self.currency = currency
         self.amount = amount
 
@@ -453,17 +482,19 @@ class SentCodePaymentRequired(TLObject):
             'phone_code_hash': self.phone_code_hash,
             'support_email_address': self.support_email_address,
             'support_email_subject': self.support_email_subject,
+            'premium_days': self.premium_days,
             'currency': self.currency,
             'amount': self.amount
         }
 
     def _bytes(self):
         return b''.join((
-            b'<Z\x95\xe0',
+            b'\xbf~\x82\xf8',
             self.serialize_bytes(self.store_product),
             self.serialize_bytes(self.phone_code_hash),
             self.serialize_bytes(self.support_email_address),
             self.serialize_bytes(self.support_email_subject),
+            struct.pack('<i', self.premium_days),
             self.serialize_bytes(self.currency),
             struct.pack('<q', self.amount),
         ))
@@ -474,9 +505,10 @@ class SentCodePaymentRequired(TLObject):
         _phone_code_hash = reader.tgread_string()
         _support_email_address = reader.tgread_string()
         _support_email_subject = reader.tgread_string()
+        _premium_days = reader.read_int()
         _currency = reader.tgread_string()
         _amount = reader.read_long()
-        return cls(store_product=_store_product, phone_code_hash=_phone_code_hash, support_email_address=_support_email_address, support_email_subject=_support_email_subject, currency=_currency, amount=_amount)
+        return cls(store_product=_store_product, phone_code_hash=_phone_code_hash, support_email_address=_support_email_address, support_email_subject=_support_email_subject, premium_days=_premium_days, currency=_currency, amount=_amount)
 
 
 class SentCodeSuccess(TLObject):

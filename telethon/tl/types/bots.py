@@ -9,6 +9,48 @@ if TYPE_CHECKING:
 
 
 
+class AccessSettings(TLObject):
+    CONSTRUCTOR_ID = 0xdd1fbf93
+    SUBCLASS_OF_ID = 0xeca109c2
+
+    def __init__(self, restricted: Optional[bool]=None, add_users: Optional[List['TypeUser']]=None):
+        """
+        Constructor for bots.AccessSettings: Instance of AccessSettings.
+        """
+        self.restricted = restricted
+        self.add_users = add_users
+
+    def to_dict(self):
+        return {
+            '_': 'AccessSettings',
+            'restricted': self.restricted,
+            'add_users': [] if self.add_users is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.add_users]
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\x93\xbf\x1f\xdd',
+            struct.pack('<I', (0 if self.restricted is None or self.restricted is False else 1) | (0 if self.add_users is None or self.add_users is False else 2)),
+            b'' if self.add_users is None or self.add_users is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.add_users)),b''.join(x._bytes() for x in self.add_users))),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _restricted = bool(flags & 1)
+        if flags & 2:
+            reader.read_int()
+            _add_users = []
+            for _ in range(reader.read_int()):
+                _x = reader.tgread_object()
+                _add_users.append(_x)
+
+        else:
+            _add_users = None
+        return cls(restricted=_restricted, add_users=_add_users)
+
+
 class BotInfo(TLObject):
     CONSTRUCTOR_ID = 0xe8a775b0
     SUBCLASS_OF_ID = 0xca7b2235
@@ -43,6 +85,34 @@ class BotInfo(TLObject):
         _about = reader.tgread_string()
         _description = reader.tgread_string()
         return cls(name=_name, about=_about, description=_description)
+
+
+class ExportedBotToken(TLObject):
+    CONSTRUCTOR_ID = 0x3c60b621
+    SUBCLASS_OF_ID = 0x78496c77
+
+    def __init__(self, token: str):
+        """
+        Constructor for bots.ExportedBotToken: Instance of ExportedBotToken.
+        """
+        self.token = token
+
+    def to_dict(self):
+        return {
+            '_': 'ExportedBotToken',
+            'token': self.token
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'!\xb6`<',
+            self.serialize_bytes(self.token),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _token = reader.tgread_string()
+        return cls(token=_token)
 
 
 class PopularAppBots(TLObject):
@@ -128,4 +198,32 @@ class PreviewInfo(TLObject):
             _lang_codes.append(_x)
 
         return cls(media=_media, lang_codes=_lang_codes)
+
+
+class RequestedButton(TLObject):
+    CONSTRUCTOR_ID = 0xf13bbcd7
+    SUBCLASS_OF_ID = 0xf9df53a
+
+    def __init__(self, webapp_req_id: str):
+        """
+        Constructor for bots.RequestedButton: Instance of RequestedButton.
+        """
+        self.webapp_req_id = webapp_req_id
+
+    def to_dict(self):
+        return {
+            '_': 'RequestedButton',
+            'webapp_req_id': self.webapp_req_id
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xd7\xbc;\xf1',
+            self.serialize_bytes(self.webapp_req_id),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _webapp_req_id = reader.tgread_string()
+        return cls(webapp_req_id=_webapp_req_id)
 

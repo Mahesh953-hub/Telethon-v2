@@ -6,7 +6,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeInputMedia, TypeInputPeer, TypeInputPrivacyRule, TypeMediaArea, TypeMessageEntity, TypeReaction
+    from ...tl.types import TypeInputDocument, TypeInputMedia, TypeInputPeer, TypeInputPrivacyRule, TypeMediaArea, TypeMessageEntity, TypeReaction
 
 
 
@@ -199,10 +199,10 @@ class DeleteStoriesRequest(TLRequest):
 
 
 class EditStoryRequest(TLRequest):
-    CONSTRUCTOR_ID = 0xb583ba46
+    CONSTRUCTOR_ID = 0x2c63a72b
     SUBCLASS_OF_ID = 0x8af52aac
 
-    def __init__(self, peer: 'TypeInputPeer', id: int, media: Optional['TypeInputMedia']=None, media_areas: Optional[List['TypeMediaArea']]=None, caption: Optional[str]=None, entities: Optional[List['TypeMessageEntity']]=None, privacy_rules: Optional[List['TypeInputPrivacyRule']]=None):
+    def __init__(self, peer: 'TypeInputPeer', id: int, media: Optional['TypeInputMedia']=None, media_areas: Optional[List['TypeMediaArea']]=None, caption: Optional[str]=None, entities: Optional[List['TypeMessageEntity']]=None, privacy_rules: Optional[List['TypeInputPrivacyRule']]=None, music: Optional['TypeInputDocument']=None):
         """
         :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
         """
@@ -213,11 +213,15 @@ class EditStoryRequest(TLRequest):
         self.caption = caption
         self.entities = entities
         self.privacy_rules = privacy_rules
+        self.music = music
 
     async def resolve(self, client, utils):
         self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
         if self.media:
             self.media = utils.get_input_media(self.media)
+
+        if self.music:
+            self.music = utils.get_input_document(self.music)
 
     def to_dict(self):
         return {
@@ -228,14 +232,15 @@ class EditStoryRequest(TLRequest):
             'media_areas': [] if self.media_areas is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.media_areas],
             'caption': self.caption,
             'entities': [] if self.entities is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.entities],
-            'privacy_rules': [] if self.privacy_rules is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.privacy_rules]
+            'privacy_rules': [] if self.privacy_rules is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.privacy_rules],
+            'music': self.music.to_dict() if isinstance(self.music, TLObject) else self.music
         }
 
     def _bytes(self):
         assert ((self.caption or self.caption is not None) and (self.entities or self.entities is not None)) or ((self.caption is None or self.caption is False) and (self.entities is None or self.entities is False)), 'caption, entities parameters must all be False-y (like None) or all me True-y'
         return b''.join((
-            b'F\xba\x83\xb5',
-            struct.pack('<I', (0 if self.media is None or self.media is False else 1) | (0 if self.media_areas is None or self.media_areas is False else 8) | (0 if self.caption is None or self.caption is False else 2) | (0 if self.entities is None or self.entities is False else 2) | (0 if self.privacy_rules is None or self.privacy_rules is False else 4)),
+            b'+\xa7c,',
+            struct.pack('<I', (0 if self.media is None or self.media is False else 1) | (0 if self.media_areas is None or self.media_areas is False else 8) | (0 if self.caption is None or self.caption is False else 2) | (0 if self.entities is None or self.entities is False else 2) | (0 if self.privacy_rules is None or self.privacy_rules is False else 4) | (0 if self.music is None or self.music is False else 16)),
             self.peer._bytes(),
             struct.pack('<i', self.id),
             b'' if self.media is None or self.media is False else (self.media._bytes()),
@@ -243,6 +248,7 @@ class EditStoryRequest(TLRequest):
             b'' if self.caption is None or self.caption is False else (self.serialize_bytes(self.caption)),
             b'' if self.entities is None or self.entities is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.entities)),b''.join(x._bytes() for x in self.entities))),
             b'' if self.privacy_rules is None or self.privacy_rules is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.privacy_rules)),b''.join(x._bytes() for x in self.privacy_rules))),
+            b'' if self.music is None or self.music is False else (self.music._bytes()),
         ))
 
     @classmethod
@@ -286,7 +292,11 @@ class EditStoryRequest(TLRequest):
 
         else:
             _privacy_rules = None
-        return cls(peer=_peer, id=_id, media=_media, media_areas=_media_areas, caption=_caption, entities=_entities, privacy_rules=_privacy_rules)
+        if flags & 16:
+            _music = reader.tgread_object()
+        else:
+            _music = None
+        return cls(peer=_peer, id=_id, media=_media, media_areas=_media_areas, caption=_caption, entities=_entities, privacy_rules=_privacy_rules, music=_music)
 
 
 class ExportStoryLinkRequest(TLRequest):
@@ -1104,10 +1114,10 @@ class SendReactionRequest(TLRequest):
 
 
 class SendStoryRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x737fc2ec
+    CONSTRUCTOR_ID = 0x8f9e6898
     SUBCLASS_OF_ID = 0x8af52aac
 
-    def __init__(self, peer: 'TypeInputPeer', media: 'TypeInputMedia', privacy_rules: List['TypeInputPrivacyRule'], pinned: Optional[bool]=None, noforwards: Optional[bool]=None, fwd_modified: Optional[bool]=None, media_areas: Optional[List['TypeMediaArea']]=None, caption: Optional[str]=None, entities: Optional[List['TypeMessageEntity']]=None, random_id: int=None, period: Optional[int]=None, fwd_from_id: Optional['TypeInputPeer']=None, fwd_from_story: Optional[int]=None, albums: Optional[List[int]]=None):
+    def __init__(self, peer: 'TypeInputPeer', media: 'TypeInputMedia', privacy_rules: List['TypeInputPrivacyRule'], pinned: Optional[bool]=None, noforwards: Optional[bool]=None, fwd_modified: Optional[bool]=None, media_areas: Optional[List['TypeMediaArea']]=None, caption: Optional[str]=None, entities: Optional[List['TypeMessageEntity']]=None, random_id: int=None, period: Optional[int]=None, fwd_from_id: Optional['TypeInputPeer']=None, fwd_from_story: Optional[int]=None, albums: Optional[List[int]]=None, music: Optional['TypeInputDocument']=None):
         """
         :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
         """
@@ -1125,12 +1135,16 @@ class SendStoryRequest(TLRequest):
         self.fwd_from_id = fwd_from_id
         self.fwd_from_story = fwd_from_story
         self.albums = albums
+        self.music = music
 
     async def resolve(self, client, utils):
         self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
         self.media = utils.get_input_media(self.media)
         if self.fwd_from_id:
             self.fwd_from_id = utils.get_input_peer(await client.get_input_entity(self.fwd_from_id))
+
+        if self.music:
+            self.music = utils.get_input_document(self.music)
 
     def to_dict(self):
         return {
@@ -1148,14 +1162,15 @@ class SendStoryRequest(TLRequest):
             'period': self.period,
             'fwd_from_id': self.fwd_from_id.to_dict() if isinstance(self.fwd_from_id, TLObject) else self.fwd_from_id,
             'fwd_from_story': self.fwd_from_story,
-            'albums': [] if self.albums is None else self.albums[:]
+            'albums': [] if self.albums is None else self.albums[:],
+            'music': self.music.to_dict() if isinstance(self.music, TLObject) else self.music
         }
 
     def _bytes(self):
         assert ((self.fwd_from_id or self.fwd_from_id is not None) and (self.fwd_from_story or self.fwd_from_story is not None)) or ((self.fwd_from_id is None or self.fwd_from_id is False) and (self.fwd_from_story is None or self.fwd_from_story is False)), 'fwd_from_id, fwd_from_story parameters must all be False-y (like None) or all me True-y'
         return b''.join((
-            b'\xec\xc2\x7fs',
-            struct.pack('<I', (0 if self.pinned is None or self.pinned is False else 4) | (0 if self.noforwards is None or self.noforwards is False else 16) | (0 if self.fwd_modified is None or self.fwd_modified is False else 128) | (0 if self.media_areas is None or self.media_areas is False else 32) | (0 if self.caption is None or self.caption is False else 1) | (0 if self.entities is None or self.entities is False else 2) | (0 if self.period is None or self.period is False else 8) | (0 if self.fwd_from_id is None or self.fwd_from_id is False else 64) | (0 if self.fwd_from_story is None or self.fwd_from_story is False else 64) | (0 if self.albums is None or self.albums is False else 256)),
+            b'\x98h\x9e\x8f',
+            struct.pack('<I', (0 if self.pinned is None or self.pinned is False else 4) | (0 if self.noforwards is None or self.noforwards is False else 16) | (0 if self.fwd_modified is None or self.fwd_modified is False else 128) | (0 if self.media_areas is None or self.media_areas is False else 32) | (0 if self.caption is None or self.caption is False else 1) | (0 if self.entities is None or self.entities is False else 2) | (0 if self.period is None or self.period is False else 8) | (0 if self.fwd_from_id is None or self.fwd_from_id is False else 64) | (0 if self.fwd_from_story is None or self.fwd_from_story is False else 64) | (0 if self.albums is None or self.albums is False else 256) | (0 if self.music is None or self.music is False else 512)),
             self.peer._bytes(),
             self.media._bytes(),
             b'' if self.media_areas is None or self.media_areas is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.media_areas)),b''.join(x._bytes() for x in self.media_areas))),
@@ -1167,6 +1182,7 @@ class SendStoryRequest(TLRequest):
             b'' if self.fwd_from_id is None or self.fwd_from_id is False else (self.fwd_from_id._bytes()),
             b'' if self.fwd_from_story is None or self.fwd_from_story is False else (struct.pack('<i', self.fwd_from_story)),
             b'' if self.albums is None or self.albums is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.albums)),b''.join(struct.pack('<i', x) for x in self.albums))),
+            b'' if self.music is None or self.music is False else (self.music._bytes()),
         ))
 
     @classmethod
@@ -1228,7 +1244,11 @@ class SendStoryRequest(TLRequest):
 
         else:
             _albums = None
-        return cls(peer=_peer, media=_media, privacy_rules=_privacy_rules, pinned=_pinned, noforwards=_noforwards, fwd_modified=_fwd_modified, media_areas=_media_areas, caption=_caption, entities=_entities, random_id=_random_id, period=_period, fwd_from_id=_fwd_from_id, fwd_from_story=_fwd_from_story, albums=_albums)
+        if flags & 512:
+            _music = reader.tgread_object()
+        else:
+            _music = None
+        return cls(peer=_peer, media=_media, privacy_rules=_privacy_rules, pinned=_pinned, noforwards=_noforwards, fwd_modified=_fwd_modified, media_areas=_media_areas, caption=_caption, entities=_entities, random_id=_random_id, period=_period, fwd_from_id=_fwd_from_id, fwd_from_story=_fwd_from_story, albums=_albums, music=_music)
 
 
 class StartLiveRequest(TLRequest):

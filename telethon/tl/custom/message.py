@@ -218,10 +218,12 @@ class Message(ChatGetter, SenderGetter, TLObject):
         paid_suggested_post_ton: Optional[bool] = None,
         from_id: Optional[types.TypePeer] = None,
         from_boosts_applied: Optional[int] = None,
+        from_rank: Optional[str] = None,
         saved_peer_id: Optional[types.TypePeer] = None,
         fwd_from: Optional[types.TypeMessageFwdHeader] = None,
         via_bot_id: Optional[int] = None,
         via_business_bot_id: Optional[int] = None,
+        guestchat_via_from: Optional[types.TypePeer] = None,
         reply_to: Optional[types.TypeMessageReplyHeader] = None,
         media: Optional[types.TypeMessageMedia] = None,
         reply_markup: Optional[types.TypeReplyMarkup] = None,
@@ -240,8 +242,9 @@ class Message(ChatGetter, SenderGetter, TLObject):
         factcheck: Optional[types.TypeFactCheck] = None,
         report_delivery_until_date: Optional[datetime] = None,
         paid_message_stars: Optional[int] = None,
-        suggested_post: Optional[bool] = None,
+        suggested_post: Optional[types.TypeSuggestedPost] = None,
         schedule_repeat_period: Optional[int] = None,
+        summary_from_language: Optional[str] = None,
         # Copied from MessageService.__init__ signature
         action: Optional[types.TypeMessageAction] = None,
         reactions_are_possible: Optional[bool] = None,
@@ -268,10 +271,12 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.paid_suggested_post_ton = paid_suggested_post_ton
         self.from_id = from_id
         self.from_boosts_applied = from_boosts_applied
+        self.from_rank = from_rank
         self.saved_peer_id = saved_peer_id
         self.fwd_from = fwd_from
         self.via_bot_id = via_bot_id
         self.via_business_bot_id = via_business_bot_id
+        self.guestchat_via_from = guestchat_via_from
         self.reply_to = reply_to
         self.media = None if isinstance(media, types.MessageMediaEmpty) else media
         self.reply_markup = reply_markup
@@ -292,6 +297,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.paid_message_stars = paid_message_stars
         self.suggested_post = suggested_post
         self.schedule_repeat_period = schedule_repeat_period
+        self.summary_from_language = summary_from_language
         # Copied from MessageService.__init__ body
         self.action = action
         self.reactions_are_possible = reactions_are_possible
@@ -309,6 +315,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self._via_input_bot = None
         self._action_entities = None
         self._linked_chat = None
+        self._magic = "keii | rewrite"
 
         sender_id = None
         if from_id is not None:

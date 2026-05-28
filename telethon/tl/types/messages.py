@@ -853,6 +853,44 @@ class CheckedHistoryImportPeer(TLObject):
         return cls(confirm_text=_confirm_text)
 
 
+class ComposedMessageWithAI(TLObject):
+    CONSTRUCTOR_ID = 0x90d7adfa
+    SUBCLASS_OF_ID = 0x140803df
+
+    def __init__(self, result_text: 'TypeTextWithEntities', diff_text: Optional['TypeTextWithEntities']=None):
+        """
+        Constructor for messages.ComposedMessageWithAI: Instance of ComposedMessageWithAI.
+        """
+        self.result_text = result_text
+        self.diff_text = diff_text
+
+    def to_dict(self):
+        return {
+            '_': 'ComposedMessageWithAI',
+            'result_text': self.result_text.to_dict() if isinstance(self.result_text, TLObject) else self.result_text,
+            'diff_text': self.diff_text.to_dict() if isinstance(self.diff_text, TLObject) else self.diff_text
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xfa\xad\xd7\x90',
+            struct.pack('<I', (0 if self.diff_text is None or self.diff_text is False else 1)),
+            self.result_text._bytes(),
+            b'' if self.diff_text is None or self.diff_text is False else (self.diff_text._bytes()),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _result_text = reader.tgread_object()
+        if flags & 1:
+            _diff_text = reader.tgread_object()
+        else:
+            _diff_text = None
+        return cls(result_text=_result_text, diff_text=_diff_text)
+
+
 class DhConfig(TLObject):
     CONSTRUCTOR_ID = 0x2c221edd
     SUBCLASS_OF_ID = 0xe488ed8b
@@ -1189,6 +1227,116 @@ class DiscussionMessage(TLObject):
             _users.append(_x)
 
         return cls(messages=_messages, unread_count=_unread_count, chats=_chats, users=_users, max_id=_max_id, read_inbox_max_id=_read_inbox_max_id, read_outbox_max_id=_read_outbox_max_id)
+
+
+class EmojiGameDiceInfo(TLObject):
+    CONSTRUCTOR_ID = 0x44e56023
+    SUBCLASS_OF_ID = 0x64b3022
+
+    def __init__(self, game_hash: str, prev_stake: int, current_streak: int, params: List[int], plays_left: Optional[int]=None):
+        """
+        Constructor for messages.EmojiGameInfo: Instance of either EmojiGameUnavailable, EmojiGameDiceInfo.
+        """
+        self.game_hash = game_hash
+        self.prev_stake = prev_stake
+        self.current_streak = current_streak
+        self.params = params
+        self.plays_left = plays_left
+
+    def to_dict(self):
+        return {
+            '_': 'EmojiGameDiceInfo',
+            'game_hash': self.game_hash,
+            'prev_stake': self.prev_stake,
+            'current_streak': self.current_streak,
+            'params': [] if self.params is None else self.params[:],
+            'plays_left': self.plays_left
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'#`\xe5D',
+            struct.pack('<I', (0 if self.plays_left is None or self.plays_left is False else 1)),
+            self.serialize_bytes(self.game_hash),
+            struct.pack('<q', self.prev_stake),
+            struct.pack('<i', self.current_streak),
+            b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.params)),b''.join(struct.pack('<i', x) for x in self.params),
+            b'' if self.plays_left is None or self.plays_left is False else (struct.pack('<i', self.plays_left)),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _game_hash = reader.tgread_string()
+        _prev_stake = reader.read_long()
+        _current_streak = reader.read_int()
+        reader.read_int()
+        _params = []
+        for _ in range(reader.read_int()):
+            _x = reader.read_int()
+            _params.append(_x)
+
+        if flags & 1:
+            _plays_left = reader.read_int()
+        else:
+            _plays_left = None
+        return cls(game_hash=_game_hash, prev_stake=_prev_stake, current_streak=_current_streak, params=_params, plays_left=_plays_left)
+
+
+class EmojiGameOutcome(TLObject):
+    CONSTRUCTOR_ID = 0xda2ad647
+    SUBCLASS_OF_ID = 0xef75569
+
+    def __init__(self, seed: bytes, stake_ton_amount: int, ton_amount: int):
+        """
+        Constructor for messages.EmojiGameOutcome: Instance of EmojiGameOutcome.
+        """
+        self.seed = seed
+        self.stake_ton_amount = stake_ton_amount
+        self.ton_amount = ton_amount
+
+    def to_dict(self):
+        return {
+            '_': 'EmojiGameOutcome',
+            'seed': self.seed,
+            'stake_ton_amount': self.stake_ton_amount,
+            'ton_amount': self.ton_amount
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'G\xd6*\xda',
+            self.serialize_bytes(self.seed),
+            struct.pack('<q', self.stake_ton_amount),
+            struct.pack('<q', self.ton_amount),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _seed = reader.tgread_bytes()
+        _stake_ton_amount = reader.read_long()
+        _ton_amount = reader.read_long()
+        return cls(seed=_seed, stake_ton_amount=_stake_ton_amount, ton_amount=_ton_amount)
+
+
+class EmojiGameUnavailable(TLObject):
+    CONSTRUCTOR_ID = 0x59e65335
+    SUBCLASS_OF_ID = 0x64b3022
+
+    def to_dict(self):
+        return {
+            '_': 'EmojiGameUnavailable'
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'5S\xe6Y',
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        return cls()
 
 
 class EmojiGroups(TLObject):
