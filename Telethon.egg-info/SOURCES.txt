@@ -118,6 +118,7 @@ telethon/tl/custom/stargift.py
 telethon/tl/custom/user.py
 telethon/tl/functions/__init__.py
 telethon/tl/functions/account.py
+telethon/tl/functions/aicompose.py
 telethon/tl/functions/auth.py
 telethon/tl/functions/bots.py
 telethon/tl/functions/channels.py
@@ -142,6 +143,7 @@ telethon/tl/functions/users.py
 telethon/tl/patched/__init__.py
 telethon/tl/types/__init__.py
 telethon/tl/types/account.py
+telethon/tl/types/aicompose.py
 telethon/tl/types/auth.py
 telethon/tl/types/bots.py
 telethon/tl/types/channels.py

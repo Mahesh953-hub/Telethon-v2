@@ -853,6 +853,44 @@ class CheckedHistoryImportPeer(TLObject):
         return cls(confirm_text=_confirm_text)
 
 
+class ComposedMessageWithAI(TLObject):
+    CONSTRUCTOR_ID = 0x90d7adfa
+    SUBCLASS_OF_ID = 0x140803df
+
+    def __init__(self, result_text: 'TypeTextWithEntities', diff_text: Optional['TypeTextWithEntities']=None):
+        """
+        Constructor for messages.ComposedMessageWithAI: Instance of ComposedMessageWithAI.
+        """
+        self.result_text = result_text
+        self.diff_text = diff_text
+
+    def to_dict(self):
+        return {
+            '_': 'ComposedMessageWithAI',
+            'result_text': self.result_text.to_dict() if isinstance(self.result_text, TLObject) else self.result_text,
+            'diff_text': self.diff_text.to_dict() if isinstance(self.diff_text, TLObject) else self.diff_text
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xfa\xad\xd7\x90',
+            struct.pack('<I', (0 if self.diff_text is None or self.diff_text is False else 1)),
+            self.result_text._bytes(),
+            b'' if self.diff_text is None or self.diff_text is False else (self.diff_text._bytes()),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _result_text = reader.tgread_object()
+        if flags & 1:
+            _diff_text = reader.tgread_object()
+        else:
+            _diff_text = None
+        return cls(result_text=_result_text, diff_text=_diff_text)
+
+
 class DhConfig(TLObject):
     CONSTRUCTOR_ID = 0x2c221edd
     SUBCLASS_OF_ID = 0xe488ed8b

@@ -709,7 +709,7 @@ class MessageMethods:
                 Width/height and dimensions/size ratios may be important.
                 For Telegram to accept a thumbnail, you must provide the
                 dimensions of the underlying media through ``attributes=``
-                with :tl:`DocumentAttributesVideo` or by installing the
+                with :tl:`DocumentAttributeVideo` or by installing the
                 optional ``hachoir`` dependency.
 
             force_document (`bool`, optional):
@@ -1237,7 +1237,7 @@ class MessageMethods:
             message: 'typing.Union[int, types.Message, types.InputMessageID, str]' = None,
             text: str = None,
             *,
-            parse_mode: str = (),
+            parse_mode: typing.Optional[str] = (),
             attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
             formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             link_preview: bool = True,
@@ -1303,7 +1303,7 @@ class MessageMethods:
                 Width/height and dimensions/size ratios may be important.
                 For Telegram to accept a thumbnail, you must provide the
                 dimensions of the underlying media through ``attributes=``
-                with :tl:`DocumentAttributesVideo` or by installing the
+                with :tl:`DocumentAttributeVideo` or by installing the
                 optional ``hachoir`` dependency.
 
             force_document (`bool`, optional):

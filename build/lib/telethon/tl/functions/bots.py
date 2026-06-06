@@ -6,7 +6,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeBotCommand, TypeBotCommandScope, TypeBotMenuButton, TypeChatAdminRights, TypeDataJSON, TypeEmojiStatus, TypeInputMedia, TypeInputPeer, TypeInputUser
+    from ...tl.types import TypeBotCommand, TypeBotCommandScope, TypeBotMenuButton, TypeChatAdminRights, TypeDataJSON, TypeEmojiStatus, TypeInputMedia, TypeInputPeer, TypeInputUser, TypeKeyboardButton
 
 
 
@@ -183,6 +183,79 @@ class CheckDownloadFileParamsRequest(TLRequest):
         return cls(bot=_bot, file_name=_file_name, url=_url)
 
 
+class CheckUsernameRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x87f2219b
+    SUBCLASS_OF_ID = 0xf5b399ac
+
+    def __init__(self, username: str):
+        """
+        :returns Bool: This type has no constructors.
+        """
+        self.username = username
+
+    def to_dict(self):
+        return {
+            '_': 'CheckUsernameRequest',
+            'username': self.username
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\x9b!\xf2\x87',
+            self.serialize_bytes(self.username),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _username = reader.tgread_string()
+        return cls(username=_username)
+
+
+class CreateBotRequest(TLRequest):
+    CONSTRUCTOR_ID = 0xe5b17f2b
+    SUBCLASS_OF_ID = 0x2da17977
+
+    def __init__(self, name: str, username: str, manager_id: 'TypeInputUser', via_deeplink: Optional[bool]=None):
+        """
+        :returns User: Instance of either UserEmpty, User.
+        """
+        self.name = name
+        self.username = username
+        self.manager_id = manager_id
+        self.via_deeplink = via_deeplink
+
+    async def resolve(self, client, utils):
+        self.manager_id = utils.get_input_user(await client.get_input_entity(self.manager_id))
+
+    def to_dict(self):
+        return {
+            '_': 'CreateBotRequest',
+            'name': self.name,
+            'username': self.username,
+            'manager_id': self.manager_id.to_dict() if isinstance(self.manager_id, TLObject) else self.manager_id,
+            'via_deeplink': self.via_deeplink
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'+\x7f\xb1\xe5',
+            struct.pack('<I', (0 if self.via_deeplink is None or self.via_deeplink is False else 1)),
+            self.serialize_bytes(self.name),
+            self.serialize_bytes(self.username),
+            self.manager_id._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _via_deeplink = bool(flags & 1)
+        _name = reader.tgread_string()
+        _username = reader.tgread_string()
+        _manager_id = reader.tgread_object()
+        return cls(name=_name, username=_username, manager_id=_manager_id, via_deeplink=_via_deeplink)
+
+
 class DeletePreviewMediaRequest(TLRequest):
     CONSTRUCTOR_ID = 0x2d0135b3
     SUBCLASS_OF_ID = 0xf5b399ac
@@ -232,6 +305,61 @@ class DeletePreviewMediaRequest(TLRequest):
         return cls(bot=_bot, lang_code=_lang_code, media=_media)
 
 
+class EditAccessSettingsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x31813cd8
+    SUBCLASS_OF_ID = 0xf5b399ac
+
+    def __init__(self, bot: 'TypeInputUser', restricted: Optional[bool]=None, add_users: Optional[List['TypeInputUser']]=None):
+        """
+        :returns Bool: This type has no constructors.
+        """
+        self.bot = bot
+        self.restricted = restricted
+        self.add_users = add_users
+
+    async def resolve(self, client, utils):
+        self.bot = utils.get_input_user(await client.get_input_entity(self.bot))
+        if self.add_users:
+            _tmp = []
+            for _x in self.add_users:
+                _tmp.append(utils.get_input_user(await client.get_input_entity(_x)))
+
+            self.add_users = _tmp
+
+    def to_dict(self):
+        return {
+            '_': 'EditAccessSettingsRequest',
+            'bot': self.bot.to_dict() if isinstance(self.bot, TLObject) else self.bot,
+            'restricted': self.restricted,
+            'add_users': [] if self.add_users is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.add_users]
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xd8<\x811',
+            struct.pack('<I', (0 if self.restricted is None or self.restricted is False else 1) | (0 if self.add_users is None or self.add_users is False else 2)),
+            self.bot._bytes(),
+            b'' if self.add_users is None or self.add_users is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.add_users)),b''.join(x._bytes() for x in self.add_users))),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _restricted = bool(flags & 1)
+        _bot = reader.tgread_object()
+        if flags & 2:
+            reader.read_int()
+            _add_users = []
+            for _ in range(reader.read_int()):
+                _x = reader.tgread_object()
+                _add_users.append(_x)
+
+        else:
+            _add_users = None
+        return cls(bot=_bot, restricted=_restricted, add_users=_add_users)
+
+
 class EditPreviewMediaRequest(TLRequest):
     CONSTRUCTOR_ID = 0x8525606f
     SUBCLASS_OF_ID = 0x562abc2d
@@ -275,6 +403,72 @@ class EditPreviewMediaRequest(TLRequest):
         _media = reader.tgread_object()
         _new_media = reader.tgread_object()
         return cls(bot=_bot, lang_code=_lang_code, media=_media, new_media=_new_media)
+
+
+class ExportBotTokenRequest(TLRequest):
+    CONSTRUCTOR_ID = 0xbd0d99eb
+    SUBCLASS_OF_ID = 0x78496c77
+
+    def __init__(self, bot: 'TypeInputUser', revoke: bool):
+        """
+        :returns bots.ExportedBotToken: Instance of ExportedBotToken.
+        """
+        self.bot = bot
+        self.revoke = revoke
+
+    async def resolve(self, client, utils):
+        self.bot = utils.get_input_user(await client.get_input_entity(self.bot))
+
+    def to_dict(self):
+        return {
+            '_': 'ExportBotTokenRequest',
+            'bot': self.bot.to_dict() if isinstance(self.bot, TLObject) else self.bot,
+            'revoke': self.revoke
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xeb\x99\r\xbd',
+            self.bot._bytes(),
+            b'\xb5ur\x99' if self.revoke else b'7\x97y\xbc',
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _bot = reader.tgread_object()
+        _revoke = reader.tgread_bool()
+        return cls(bot=_bot, revoke=_revoke)
+
+
+class GetAccessSettingsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x213853a3
+    SUBCLASS_OF_ID = 0xeca109c2
+
+    def __init__(self, bot: 'TypeInputUser'):
+        """
+        :returns bots.AccessSettings: Instance of AccessSettings.
+        """
+        self.bot = bot
+
+    async def resolve(self, client, utils):
+        self.bot = utils.get_input_user(await client.get_input_entity(self.bot))
+
+    def to_dict(self):
+        return {
+            '_': 'GetAccessSettingsRequest',
+            'bot': self.bot.to_dict() if isinstance(self.bot, TLObject) else self.bot
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xa3S8!',
+            self.bot._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _bot = reader.tgread_object()
+        return cls(bot=_bot)
 
 
 class GetAdminedBotsRequest(TLRequest):
@@ -530,6 +724,41 @@ class GetPreviewMediasRequest(TLRequest):
         return cls(bot=_bot)
 
 
+class GetRequestedWebViewButtonRequest(TLRequest):
+    CONSTRUCTOR_ID = 0xbf25b7f3
+    SUBCLASS_OF_ID = 0xbad74a3
+
+    def __init__(self, bot: 'TypeInputUser', webapp_req_id: str):
+        """
+        :returns KeyboardButton: Instance of either KeyboardButton, KeyboardButtonUrl, KeyboardButtonCallback, KeyboardButtonRequestPhone, KeyboardButtonRequestGeoLocation, KeyboardButtonSwitchInline, KeyboardButtonGame, KeyboardButtonBuy, KeyboardButtonUrlAuth, InputKeyboardButtonUrlAuth, KeyboardButtonRequestPoll, InputKeyboardButtonUserProfile, KeyboardButtonUserProfile, KeyboardButtonWebView, KeyboardButtonSimpleWebView, KeyboardButtonRequestPeer, InputKeyboardButtonRequestPeer, KeyboardButtonCopy.
+        """
+        self.bot = bot
+        self.webapp_req_id = webapp_req_id
+
+    async def resolve(self, client, utils):
+        self.bot = utils.get_input_user(await client.get_input_entity(self.bot))
+
+    def to_dict(self):
+        return {
+            '_': 'GetRequestedWebViewButtonRequest',
+            'bot': self.bot.to_dict() if isinstance(self.bot, TLObject) else self.bot,
+            'webapp_req_id': self.webapp_req_id
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xf3\xb7%\xbf',
+            self.bot._bytes(),
+            self.serialize_bytes(self.webapp_req_id),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _bot = reader.tgread_object()
+        _webapp_req_id = reader.tgread_string()
+        return cls(bot=_bot, webapp_req_id=_webapp_req_id)
+
+
 class InvokeWebViewCustomMethodRequest(TLRequest):
     CONSTRUCTOR_ID = 0x87fc5e7
     SUBCLASS_OF_ID = 0xad0352e8
@@ -656,6 +885,41 @@ class ReorderUsernamesRequest(TLRequest):
             _order.append(_x)
 
         return cls(bot=_bot, order=_order)
+
+
+class RequestWebViewButtonRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x31a2a35e
+    SUBCLASS_OF_ID = 0xf9df53a
+
+    def __init__(self, user_id: 'TypeInputUser', button: 'TypeKeyboardButton'):
+        """
+        :returns bots.RequestedButton: Instance of RequestedButton.
+        """
+        self.user_id = user_id
+        self.button = button
+
+    async def resolve(self, client, utils):
+        self.user_id = utils.get_input_user(await client.get_input_entity(self.user_id))
+
+    def to_dict(self):
+        return {
+            '_': 'RequestWebViewButtonRequest',
+            'user_id': self.user_id.to_dict() if isinstance(self.user_id, TLObject) else self.user_id,
+            'button': self.button.to_dict() if isinstance(self.button, TLObject) else self.button
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'^\xa3\xa21',
+            self.user_id._bytes(),
+            self.button._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _user_id = reader.tgread_object()
+        _button = reader.tgread_object()
+        return cls(user_id=_user_id, button=_button)
 
 
 class ResetBotCommandsRequest(TLRequest):

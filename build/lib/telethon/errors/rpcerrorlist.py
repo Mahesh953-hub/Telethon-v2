@@ -2730,15 +2730,6 @@ class PaymentProviderInvalidError(BadRequestError):
         return type(self), (self.request,)
 
 
-class PaymentRequiredError(BadRequestError):
-    def __init__(self, request):
-        self.request = request
-        super(Exception, self).__init__('The payment is required' + self._fmt_request(self.request))
-
-    def __reduce__(self):
-        return type(self), (self.request,)
-
-
 class PeerFloodError(BadRequestError):
     def __init__(self, request):
         self.request = request
@@ -4305,7 +4296,7 @@ class UsageLimitInvalidError(BadRequestError):
 class UsernameInvalidError(BadRequestError):
     def __init__(self, request):
         self.request = request
-        super(Exception, self).__init__('Nobody is using this username, or the username is unacceptable. If the latter, it must match r"[a-zA-Z][\\w\\d]{3,30}[a-zA-Z\\d]"' + self._fmt_request(self.request))
+        super(Exception, self).__init__('Nobody is using this username or the username is unacceptable' + self._fmt_request(self.request))
 
     def __reduce__(self):
         return type(self), (self.request,)
@@ -4807,6 +4798,15 @@ class ChatSendPhotosForbiddenError(ForbiddenError):
         return type(self), (self.request,)
 
 
+class ChatSendVideosForbiddenError(ForbiddenError):
+    def __init__(self, request):
+        self.request = request
+        super(Exception, self).__init__('You cannot send videos results in this Chat' + self._fmt_request(self.request))
+
+    def __reduce__(self):
+        return type(self), (self.request,)
+
+
 class ChatSendPlainForbiddenError(ForbiddenError):
     def __init__(self, request):
         self.request = request
@@ -5108,7 +5108,6 @@ rpc_errors_dict = {
     'PASSWORD_RECOVERY_NA': PasswordRecoveryNaError,
     'PASSWORD_REQUIRED': PasswordRequiredError,
     'PAYMENT_PROVIDER_INVALID': PaymentProviderInvalidError,
-    'PAYMENT_REQUIRED': PaymentRequiredError,
     'PEER_FLOOD': PeerFloodError,
     'PEER_HISTORY_EMPTY': PeerHistoryEmptyError,
     'PEER_ID_INVALID': PeerIdInvalidError,
@@ -5331,6 +5330,7 @@ rpc_errors_dict = {
     'FROZEN_PARTICIPANT_MISSING': FrozenParticipantMissingError,
     'CHAT_SEND_VOICES_FORBIDDEN': ChatSendVoicesForbiddenError,
     'CHAT_SEND_PHOTOS_FORBIDDEN': ChatSendPhotosForbiddenError,
+    'CHAT_SEND_VIDEOS_FORBIDDEN': ChatSendVideosForbiddenError,
     'CHAT_SEND_PLAIN_FORBIDDEN': ChatSendPlainForbiddenError,
 }
 

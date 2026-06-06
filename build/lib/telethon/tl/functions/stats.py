@@ -168,6 +168,47 @@ class GetMessageStatsRequest(TLRequest):
         return cls(channel=_channel, msg_id=_msg_id, dark=_dark)
 
 
+class GetPollStatsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0xc27dfa68
+    SUBCLASS_OF_ID = 0xe95194cf
+
+    def __init__(self, peer: 'TypeInputPeer', msg_id: int, dark: Optional[bool]=None):
+        """
+        :returns stats.PollStats: Instance of PollStats.
+        """
+        self.peer = peer
+        self.msg_id = msg_id
+        self.dark = dark
+
+    async def resolve(self, client, utils):
+        self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
+
+    def to_dict(self):
+        return {
+            '_': 'GetPollStatsRequest',
+            'peer': self.peer.to_dict() if isinstance(self.peer, TLObject) else self.peer,
+            'msg_id': self.msg_id,
+            'dark': self.dark
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'h\xfa}\xc2',
+            struct.pack('<I', (0 if self.dark is None or self.dark is False else 1)),
+            self.peer._bytes(),
+            struct.pack('<i', self.msg_id),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _dark = bool(flags & 1)
+        _peer = reader.tgread_object()
+        _msg_id = reader.read_int()
+        return cls(peer=_peer, msg_id=_msg_id, dark=_dark)
+
+
 class GetStoryPublicForwardsRequest(TLRequest):
     CONSTRUCTOR_ID = 0xa6437ef6
     SUBCLASS_OF_ID = 0xa7283211
