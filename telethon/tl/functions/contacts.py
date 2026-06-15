@@ -775,35 +775,44 @@ class ResolveUsernameRequest(TLRequest):
 
 
 class SearchRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x11f812d8
+    CONSTRUCTOR_ID = 0x5f58d0f
     SUBCLASS_OF_ID = 0x4386a2e3
 
-    def __init__(self, q: str, limit: int):
+    def __init__(self, q: str, limit: int, broadcasts: Optional[bool]=None, bots: Optional[bool]=None):
         """
         :returns contacts.Found: Instance of Found.
         """
         self.q = q
         self.limit = limit
+        self.broadcasts = broadcasts
+        self.bots = bots
 
     def to_dict(self):
         return {
             '_': 'SearchRequest',
             'q': self.q,
-            'limit': self.limit
+            'limit': self.limit,
+            'broadcasts': self.broadcasts,
+            'bots': self.bots
         }
 
     def _bytes(self):
         return b''.join((
-            b'\xd8\x12\xf8\x11',
+            b'\x0f\x8d\xf5\x05',
+            struct.pack('<I', (0 if self.broadcasts is None or self.broadcasts is False else 1) | (0 if self.bots is None or self.bots is False else 2)),
             self.serialize_bytes(self.q),
             struct.pack('<i', self.limit),
         ))
 
     @classmethod
     def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _broadcasts = bool(flags & 1)
+        _bots = bool(flags & 2)
         _q = reader.tgread_string()
         _limit = reader.read_int()
-        return cls(q=_q, limit=_limit)
+        return cls(q=_q, limit=_limit, broadcasts=_broadcasts, bots=_bots)
 
 
 class SetBlockedRequest(TLRequest):

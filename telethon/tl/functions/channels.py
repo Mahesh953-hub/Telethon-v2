@@ -1137,12 +1137,12 @@ class InviteToChannelRequest(TLRequest):
 
 
 class JoinChannelRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x24b524c5
-    SUBCLASS_OF_ID = 0x8af52aac
+    CONSTRUCTOR_ID = 0x7f6a1e22
+    SUBCLASS_OF_ID = 0x5d0ff992
 
     def __init__(self, channel: 'TypeInputChannel'):
         """
-        :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
+        :returns messages.ChatInviteJoinResult: Instance of either ChatInviteJoinResultOk, ChatInviteJoinResultWebView.
         """
         self.channel = channel
 
@@ -1157,7 +1157,7 @@ class JoinChannelRequest(TLRequest):
 
     def _bytes(self):
         return b''.join((
-            b'\xc5$\xb5$',
+            b'"\x1ej\x7f',
             self.channel._bytes(),
         ))
 
@@ -1781,38 +1781,53 @@ class ToggleForumRequest(TLRequest):
 
 
 class ToggleJoinRequestRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x4c2985b6
+    CONSTRUCTOR_ID = 0xecc2618
     SUBCLASS_OF_ID = 0x8af52aac
 
-    def __init__(self, channel: 'TypeInputChannel', enabled: bool):
+    def __init__(self, channel: 'TypeInputChannel', enabled: bool, apply_to_invites: Optional[bool]=None, guard_bot: Optional['TypeInputUser']=None):
         """
         :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
         """
         self.channel = channel
         self.enabled = enabled
+        self.apply_to_invites = apply_to_invites
+        self.guard_bot = guard_bot
 
     async def resolve(self, client, utils):
         self.channel = utils.get_input_channel(await client.get_input_entity(self.channel))
+        if self.guard_bot:
+            self.guard_bot = utils.get_input_user(await client.get_input_entity(self.guard_bot))
 
     def to_dict(self):
         return {
             '_': 'ToggleJoinRequestRequest',
             'channel': self.channel.to_dict() if isinstance(self.channel, TLObject) else self.channel,
-            'enabled': self.enabled
+            'enabled': self.enabled,
+            'apply_to_invites': self.apply_to_invites,
+            'guard_bot': self.guard_bot.to_dict() if isinstance(self.guard_bot, TLObject) else self.guard_bot
         }
 
     def _bytes(self):
         return b''.join((
-            b'\xb6\x85)L',
+            b'\x18&\xcc\x0e',
+            struct.pack('<I', (0 if self.apply_to_invites is None or self.apply_to_invites is False else 2) | (0 if self.guard_bot is None or self.guard_bot is False else 1)),
             self.channel._bytes(),
             b'\xb5ur\x99' if self.enabled else b'7\x97y\xbc',
+            b'' if self.guard_bot is None or self.guard_bot is False else (self.guard_bot._bytes()),
         ))
 
     @classmethod
     def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _apply_to_invites = bool(flags & 2)
         _channel = reader.tgread_object()
         _enabled = reader.tgread_bool()
-        return cls(channel=_channel, enabled=_enabled)
+        if flags & 1:
+            _guard_bot = reader.tgread_object()
+        else:
+            _guard_bot = None
+        return cls(channel=_channel, enabled=_enabled, apply_to_invites=_apply_to_invites, guard_bot=_guard_bot)
 
 
 class ToggleJoinToSendRequest(TLRequest):

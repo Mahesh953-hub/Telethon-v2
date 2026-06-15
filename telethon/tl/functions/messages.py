@@ -6,7 +6,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeChatBannedRights, TypeChatReactions, TypeDataJSON, TypeDialogFilter, TypeInlineBotSwitchPM, TypeInlineBotWebView, TypeInlineQueryPeerType, TypeInputAiComposeTone, TypeInputBotApp, TypeInputBotInlineMessageID, TypeInputBotInlineResult, TypeInputChatPhoto, TypeInputChatTheme, TypeInputCheckPasswordSRP, TypeInputDialogPeer, TypeInputDocument, TypeInputEncryptedChat, TypeInputEncryptedFile, TypeInputFile, TypeInputGeoPoint, TypeInputMedia, TypeInputMessage, TypeInputMessageReadMetric, TypeInputPeer, TypeInputQuickReplyShortcut, TypeInputReplyTo, TypeInputSingleMedia, TypeInputStickerSet, TypeInputStickeredMedia, TypeInputUser, TypeInputWallPaper, TypeMessageEntity, TypeMessagesFilter, TypePaidReactionPrivacy, TypePollAnswer, TypeReaction, TypeReplyMarkup, TypeSendMessageAction, TypeShippingOption, TypeStarsSubscriptionPricing, TypeSuggestedPost, TypeTextWithEntities, TypeTodoItem, TypeWallPaperSettings
+    from ...tl.types import TypeChatBannedRights, TypeChatReactions, TypeDataJSON, TypeDialogFilter, TypeInlineBotSwitchPM, TypeInlineBotWebView, TypeInlineQueryPeerType, TypeInputAiComposeTone, TypeInputBotApp, TypeInputBotInlineMessageID, TypeInputBotInlineResult, TypeInputChatPhoto, TypeInputChatTheme, TypeInputCheckPasswordSRP, TypeInputDialogPeer, TypeInputDocument, TypeInputEncryptedChat, TypeInputEncryptedFile, TypeInputFile, TypeInputGeoPoint, TypeInputMedia, TypeInputMessage, TypeInputMessageReadMetric, TypeInputPeer, TypeInputQuickReplyShortcut, TypeInputReplyTo, TypeInputRichMessage, TypeInputSingleMedia, TypeInputStickerSet, TypeInputStickeredMedia, TypeInputUser, TypeInputWallPaper, TypeMessageEntity, TypeMessagesFilter, TypePaidReactionPrivacy, TypePollAnswer, TypeReaction, TypeReplyMarkup, TypeSendMessageAction, TypeShippingOption, TypeStarsSubscriptionPricing, TypeSuggestedPost, TypeTextWithEntities, TypeTodoItem, TypeWallPaperSettings
 
 
 
@@ -1777,10 +1777,10 @@ class EditForumTopicRequest(TLRequest):
 
 
 class EditInlineBotMessageRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x83557dba
+    CONSTRUCTOR_ID = 0xa423bb51
     SUBCLASS_OF_ID = 0xf5b399ac
 
-    def __init__(self, id: 'TypeInputBotInlineMessageID', no_webpage: Optional[bool]=None, invert_media: Optional[bool]=None, message: Optional[str]=None, media: Optional['TypeInputMedia']=None, reply_markup: Optional['TypeReplyMarkup']=None, entities: Optional[List['TypeMessageEntity']]=None):
+    def __init__(self, id: 'TypeInputBotInlineMessageID', no_webpage: Optional[bool]=None, invert_media: Optional[bool]=None, message: Optional[str]=None, media: Optional['TypeInputMedia']=None, reply_markup: Optional['TypeReplyMarkup']=None, entities: Optional[List['TypeMessageEntity']]=None, rich_message: Optional['TypeInputRichMessage']=None):
         """
         :returns Bool: This type has no constructors.
         """
@@ -1791,6 +1791,7 @@ class EditInlineBotMessageRequest(TLRequest):
         self.media = media
         self.reply_markup = reply_markup
         self.entities = entities
+        self.rich_message = rich_message
 
     async def resolve(self, client, utils):
         if self.media:
@@ -1805,18 +1806,20 @@ class EditInlineBotMessageRequest(TLRequest):
             'message': self.message,
             'media': self.media.to_dict() if isinstance(self.media, TLObject) else self.media,
             'reply_markup': self.reply_markup.to_dict() if isinstance(self.reply_markup, TLObject) else self.reply_markup,
-            'entities': [] if self.entities is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.entities]
+            'entities': [] if self.entities is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.entities],
+            'rich_message': self.rich_message.to_dict() if isinstance(self.rich_message, TLObject) else self.rich_message
         }
 
     def _bytes(self):
         return b''.join((
-            b'\xba}U\x83',
-            struct.pack('<I', (0 if self.no_webpage is None or self.no_webpage is False else 2) | (0 if self.invert_media is None or self.invert_media is False else 65536) | (0 if self.message is None or self.message is False else 2048) | (0 if self.media is None or self.media is False else 16384) | (0 if self.reply_markup is None or self.reply_markup is False else 4) | (0 if self.entities is None or self.entities is False else 8)),
+            b'Q\xbb#\xa4',
+            struct.pack('<I', (0 if self.no_webpage is None or self.no_webpage is False else 2) | (0 if self.invert_media is None or self.invert_media is False else 65536) | (0 if self.message is None or self.message is False else 2048) | (0 if self.media is None or self.media is False else 16384) | (0 if self.reply_markup is None or self.reply_markup is False else 4) | (0 if self.entities is None or self.entities is False else 8) | (0 if self.rich_message is None or self.rich_message is False else 8388608)),
             self.id._bytes(),
             b'' if self.message is None or self.message is False else (self.serialize_bytes(self.message)),
             b'' if self.media is None or self.media is False else (self.media._bytes()),
             b'' if self.reply_markup is None or self.reply_markup is False else (self.reply_markup._bytes()),
             b'' if self.entities is None or self.entities is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.entities)),b''.join(x._bytes() for x in self.entities))),
+            b'' if self.rich_message is None or self.rich_message is False else (self.rich_message._bytes()),
         ))
 
     @classmethod
@@ -1847,14 +1850,18 @@ class EditInlineBotMessageRequest(TLRequest):
 
         else:
             _entities = None
-        return cls(id=_id, no_webpage=_no_webpage, invert_media=_invert_media, message=_message, media=_media, reply_markup=_reply_markup, entities=_entities)
+        if flags & 8388608:
+            _rich_message = reader.tgread_object()
+        else:
+            _rich_message = None
+        return cls(id=_id, no_webpage=_no_webpage, invert_media=_invert_media, message=_message, media=_media, reply_markup=_reply_markup, entities=_entities, rich_message=_rich_message)
 
 
 class EditMessageRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x51e842e1
+    CONSTRUCTOR_ID = 0xb106e66c
     SUBCLASS_OF_ID = 0x8af52aac
 
-    def __init__(self, peer: 'TypeInputPeer', id: int, no_webpage: Optional[bool]=None, invert_media: Optional[bool]=None, message: Optional[str]=None, media: Optional['TypeInputMedia']=None, reply_markup: Optional['TypeReplyMarkup']=None, entities: Optional[List['TypeMessageEntity']]=None, schedule_date: Optional[datetime]=None, schedule_repeat_period: Optional[int]=None, quick_reply_shortcut_id: Optional[int]=None):
+    def __init__(self, peer: 'TypeInputPeer', id: int, no_webpage: Optional[bool]=None, invert_media: Optional[bool]=None, message: Optional[str]=None, media: Optional['TypeInputMedia']=None, reply_markup: Optional['TypeReplyMarkup']=None, entities: Optional[List['TypeMessageEntity']]=None, schedule_date: Optional[datetime]=None, schedule_repeat_period: Optional[int]=None, quick_reply_shortcut_id: Optional[int]=None, rich_message: Optional['TypeInputRichMessage']=None):
         """
         :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
         """
@@ -1869,6 +1876,7 @@ class EditMessageRequest(TLRequest):
         self.schedule_date = schedule_date
         self.schedule_repeat_period = schedule_repeat_period
         self.quick_reply_shortcut_id = quick_reply_shortcut_id
+        self.rich_message = rich_message
 
     async def resolve(self, client, utils):
         self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
@@ -1888,13 +1896,14 @@ class EditMessageRequest(TLRequest):
             'entities': [] if self.entities is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.entities],
             'schedule_date': self.schedule_date,
             'schedule_repeat_period': self.schedule_repeat_period,
-            'quick_reply_shortcut_id': self.quick_reply_shortcut_id
+            'quick_reply_shortcut_id': self.quick_reply_shortcut_id,
+            'rich_message': self.rich_message.to_dict() if isinstance(self.rich_message, TLObject) else self.rich_message
         }
 
     def _bytes(self):
         return b''.join((
-            b'\xe1B\xe8Q',
-            struct.pack('<I', (0 if self.no_webpage is None or self.no_webpage is False else 2) | (0 if self.invert_media is None or self.invert_media is False else 65536) | (0 if self.message is None or self.message is False else 2048) | (0 if self.media is None or self.media is False else 16384) | (0 if self.reply_markup is None or self.reply_markup is False else 4) | (0 if self.entities is None or self.entities is False else 8) | (0 if self.schedule_date is None or self.schedule_date is False else 32768) | (0 if self.schedule_repeat_period is None or self.schedule_repeat_period is False else 262144) | (0 if self.quick_reply_shortcut_id is None or self.quick_reply_shortcut_id is False else 131072)),
+            b'l\xe6\x06\xb1',
+            struct.pack('<I', (0 if self.no_webpage is None or self.no_webpage is False else 2) | (0 if self.invert_media is None or self.invert_media is False else 65536) | (0 if self.message is None or self.message is False else 2048) | (0 if self.media is None or self.media is False else 16384) | (0 if self.reply_markup is None or self.reply_markup is False else 4) | (0 if self.entities is None or self.entities is False else 8) | (0 if self.schedule_date is None or self.schedule_date is False else 32768) | (0 if self.schedule_repeat_period is None or self.schedule_repeat_period is False else 262144) | (0 if self.quick_reply_shortcut_id is None or self.quick_reply_shortcut_id is False else 131072) | (0 if self.rich_message is None or self.rich_message is False else 8388608)),
             self.peer._bytes(),
             struct.pack('<i', self.id),
             b'' if self.message is None or self.message is False else (self.serialize_bytes(self.message)),
@@ -1904,6 +1913,7 @@ class EditMessageRequest(TLRequest):
             b'' if self.schedule_date is None or self.schedule_date is False else (self.serialize_datetime(self.schedule_date)),
             b'' if self.schedule_repeat_period is None or self.schedule_repeat_period is False else (struct.pack('<i', self.schedule_repeat_period)),
             b'' if self.quick_reply_shortcut_id is None or self.quick_reply_shortcut_id is False else (struct.pack('<i', self.quick_reply_shortcut_id)),
+            b'' if self.rich_message is None or self.rich_message is False else (self.rich_message._bytes()),
         ))
 
     @classmethod
@@ -1947,7 +1957,11 @@ class EditMessageRequest(TLRequest):
             _quick_reply_shortcut_id = reader.read_int()
         else:
             _quick_reply_shortcut_id = None
-        return cls(peer=_peer, id=_id, no_webpage=_no_webpage, invert_media=_invert_media, message=_message, media=_media, reply_markup=_reply_markup, entities=_entities, schedule_date=_schedule_date, schedule_repeat_period=_schedule_repeat_period, quick_reply_shortcut_id=_quick_reply_shortcut_id)
+        if flags & 8388608:
+            _rich_message = reader.tgread_object()
+        else:
+            _rich_message = None
+        return cls(peer=_peer, id=_id, no_webpage=_no_webpage, invert_media=_invert_media, message=_message, media=_media, reply_markup=_reply_markup, entities=_entities, schedule_date=_schedule_date, schedule_repeat_period=_schedule_repeat_period, quick_reply_shortcut_id=_quick_reply_shortcut_id, rich_message=_rich_message)
 
 
 class EditQuickReplyShortcutRequest(TLRequest):
@@ -4876,6 +4890,41 @@ class GetRepliesRequest(TLRequest):
         return cls(peer=_peer, msg_id=_msg_id, offset_id=_offset_id, offset_date=_offset_date, add_offset=_add_offset, limit=_limit, max_id=_max_id, min_id=_min_id, hash=_hash)
 
 
+class GetRichMessageRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x501569cf
+    SUBCLASS_OF_ID = 0xd4b40b5e
+
+    def __init__(self, peer: 'TypeInputPeer', id: int):
+        """
+        :returns messages.Messages: Instance of either Messages, MessagesSlice, ChannelMessages, MessagesNotModified.
+        """
+        self.peer = peer
+        self.id = id
+
+    async def resolve(self, client, utils):
+        self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
+
+    def to_dict(self):
+        return {
+            '_': 'GetRichMessageRequest',
+            'peer': self.peer.to_dict() if isinstance(self.peer, TLObject) else self.peer,
+            'id': self.id
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xcfi\x15P',
+            self.peer._bytes(),
+            struct.pack('<i', self.id),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _peer = reader.tgread_object()
+        _id = reader.read_int()
+        return cls(peer=_peer, id=_id)
+
+
 class GetSavedDialogsRequest(TLRequest):
     CONSTRUCTOR_ID = 0x1e91fc99
     SUBCLASS_OF_ID = 0x614bb87e
@@ -5935,12 +5984,12 @@ class HidePeerSettingsBarRequest(TLRequest):
 
 
 class ImportChatInviteRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x6c50051c
-    SUBCLASS_OF_ID = 0x8af52aac
+    CONSTRUCTOR_ID = 0xde91436e
+    SUBCLASS_OF_ID = 0x5d0ff992
 
     def __init__(self, hash: str):
         """
-        :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
+        :returns messages.ChatInviteJoinResult: Instance of either ChatInviteJoinResultOk, ChatInviteJoinResultWebView.
         """
         self.hash = hash
 
@@ -5952,7 +6001,7 @@ class ImportChatInviteRequest(TLRequest):
 
     def _bytes(self):
         return b''.join((
-            b'\x1c\x05Pl',
+            b'nC\x91\xde',
             self.serialize_bytes(self.hash),
         ))
 
@@ -7568,10 +7617,10 @@ class SaveDefaultSendAsRequest(TLRequest):
 
 
 class SaveDraftRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x54ae308e
+    CONSTRUCTOR_ID = 0xad0fa15c
     SUBCLASS_OF_ID = 0xf5b399ac
 
-    def __init__(self, peer: 'TypeInputPeer', message: str, no_webpage: Optional[bool]=None, invert_media: Optional[bool]=None, reply_to: Optional['TypeInputReplyTo']=None, entities: Optional[List['TypeMessageEntity']]=None, media: Optional['TypeInputMedia']=None, effect: Optional[int]=None, suggested_post: Optional['TypeSuggestedPost']=None):
+    def __init__(self, peer: 'TypeInputPeer', message: str, no_webpage: Optional[bool]=None, invert_media: Optional[bool]=None, reply_to: Optional['TypeInputReplyTo']=None, entities: Optional[List['TypeMessageEntity']]=None, media: Optional['TypeInputMedia']=None, effect: Optional[int]=None, suggested_post: Optional['TypeSuggestedPost']=None, rich_message: Optional['TypeInputRichMessage']=None):
         """
         :returns Bool: This type has no constructors.
         """
@@ -7584,6 +7633,7 @@ class SaveDraftRequest(TLRequest):
         self.media = media
         self.effect = effect
         self.suggested_post = suggested_post
+        self.rich_message = rich_message
 
     async def resolve(self, client, utils):
         self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
@@ -7601,13 +7651,14 @@ class SaveDraftRequest(TLRequest):
             'entities': [] if self.entities is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.entities],
             'media': self.media.to_dict() if isinstance(self.media, TLObject) else self.media,
             'effect': self.effect,
-            'suggested_post': self.suggested_post.to_dict() if isinstance(self.suggested_post, TLObject) else self.suggested_post
+            'suggested_post': self.suggested_post.to_dict() if isinstance(self.suggested_post, TLObject) else self.suggested_post,
+            'rich_message': self.rich_message.to_dict() if isinstance(self.rich_message, TLObject) else self.rich_message
         }
 
     def _bytes(self):
         return b''.join((
-            b'\x8e0\xaeT',
-            struct.pack('<I', (0 if self.no_webpage is None or self.no_webpage is False else 2) | (0 if self.invert_media is None or self.invert_media is False else 64) | (0 if self.reply_to is None or self.reply_to is False else 16) | (0 if self.entities is None or self.entities is False else 8) | (0 if self.media is None or self.media is False else 32) | (0 if self.effect is None or self.effect is False else 128) | (0 if self.suggested_post is None or self.suggested_post is False else 256)),
+            b'\\\xa1\x0f\xad',
+            struct.pack('<I', (0 if self.no_webpage is None or self.no_webpage is False else 2) | (0 if self.invert_media is None or self.invert_media is False else 64) | (0 if self.reply_to is None or self.reply_to is False else 16) | (0 if self.entities is None or self.entities is False else 8) | (0 if self.media is None or self.media is False else 32) | (0 if self.effect is None or self.effect is False else 128) | (0 if self.suggested_post is None or self.suggested_post is False else 256) | (0 if self.rich_message is None or self.rich_message is False else 512)),
             b'' if self.reply_to is None or self.reply_to is False else (self.reply_to._bytes()),
             self.peer._bytes(),
             self.serialize_bytes(self.message),
@@ -7615,6 +7666,7 @@ class SaveDraftRequest(TLRequest):
             b'' if self.media is None or self.media is False else (self.media._bytes()),
             b'' if self.effect is None or self.effect is False else (struct.pack('<q', self.effect)),
             b'' if self.suggested_post is None or self.suggested_post is False else (self.suggested_post._bytes()),
+            b'' if self.rich_message is None or self.rich_message is False else (self.rich_message._bytes()),
         ))
 
     @classmethod
@@ -7650,7 +7702,11 @@ class SaveDraftRequest(TLRequest):
             _suggested_post = reader.tgread_object()
         else:
             _suggested_post = None
-        return cls(peer=_peer, message=_message, no_webpage=_no_webpage, invert_media=_invert_media, reply_to=_reply_to, entities=_entities, media=_media, effect=_effect, suggested_post=_suggested_post)
+        if flags & 512:
+            _rich_message = reader.tgread_object()
+        else:
+            _rich_message = None
+        return cls(peer=_peer, message=_message, no_webpage=_no_webpage, invert_media=_invert_media, reply_to=_reply_to, entities=_entities, media=_media, effect=_effect, suggested_post=_suggested_post, rich_message=_rich_message)
 
 
 class SaveGifRequest(TLRequest):
@@ -8603,10 +8659,10 @@ class SendMediaRequest(TLRequest):
 
 
 class SendMessageRequest(TLRequest):
-    CONSTRUCTOR_ID = 0x545cd15a
+    CONSTRUCTOR_ID = 0xfef48f62
     SUBCLASS_OF_ID = 0x8af52aac
 
-    def __init__(self, peer: 'TypeInputPeer', message: str, no_webpage: Optional[bool]=None, silent: Optional[bool]=None, background: Optional[bool]=None, clear_draft: Optional[bool]=None, noforwards: Optional[bool]=None, update_stickersets_order: Optional[bool]=None, invert_media: Optional[bool]=None, allow_paid_floodskip: Optional[bool]=None, reply_to: Optional['TypeInputReplyTo']=None, random_id: int=None, reply_markup: Optional['TypeReplyMarkup']=None, entities: Optional[List['TypeMessageEntity']]=None, schedule_date: Optional[datetime]=None, schedule_repeat_period: Optional[int]=None, send_as: Optional['TypeInputPeer']=None, quick_reply_shortcut: Optional['TypeInputQuickReplyShortcut']=None, effect: Optional[int]=None, allow_paid_stars: Optional[int]=None, suggested_post: Optional['TypeSuggestedPost']=None):
+    def __init__(self, peer: 'TypeInputPeer', message: str, no_webpage: Optional[bool]=None, silent: Optional[bool]=None, background: Optional[bool]=None, clear_draft: Optional[bool]=None, noforwards: Optional[bool]=None, update_stickersets_order: Optional[bool]=None, invert_media: Optional[bool]=None, allow_paid_floodskip: Optional[bool]=None, reply_to: Optional['TypeInputReplyTo']=None, random_id: int=None, reply_markup: Optional['TypeReplyMarkup']=None, entities: Optional[List['TypeMessageEntity']]=None, schedule_date: Optional[datetime]=None, schedule_repeat_period: Optional[int]=None, send_as: Optional['TypeInputPeer']=None, quick_reply_shortcut: Optional['TypeInputQuickReplyShortcut']=None, effect: Optional[int]=None, allow_paid_stars: Optional[int]=None, suggested_post: Optional['TypeSuggestedPost']=None, rich_message: Optional['TypeInputRichMessage']=None):
         """
         :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
         """
@@ -8631,6 +8687,7 @@ class SendMessageRequest(TLRequest):
         self.effect = effect
         self.allow_paid_stars = allow_paid_stars
         self.suggested_post = suggested_post
+        self.rich_message = rich_message
 
     async def resolve(self, client, utils):
         self.peer = utils.get_input_peer(await client.get_input_entity(self.peer))
@@ -8660,13 +8717,14 @@ class SendMessageRequest(TLRequest):
             'quick_reply_shortcut': self.quick_reply_shortcut.to_dict() if isinstance(self.quick_reply_shortcut, TLObject) else self.quick_reply_shortcut,
             'effect': self.effect,
             'allow_paid_stars': self.allow_paid_stars,
-            'suggested_post': self.suggested_post.to_dict() if isinstance(self.suggested_post, TLObject) else self.suggested_post
+            'suggested_post': self.suggested_post.to_dict() if isinstance(self.suggested_post, TLObject) else self.suggested_post,
+            'rich_message': self.rich_message.to_dict() if isinstance(self.rich_message, TLObject) else self.rich_message
         }
 
     def _bytes(self):
         return b''.join((
-            b'Z\xd1\\T',
-            struct.pack('<I', (0 if self.no_webpage is None or self.no_webpage is False else 2) | (0 if self.silent is None or self.silent is False else 32) | (0 if self.background is None or self.background is False else 64) | (0 if self.clear_draft is None or self.clear_draft is False else 128) | (0 if self.noforwards is None or self.noforwards is False else 16384) | (0 if self.update_stickersets_order is None or self.update_stickersets_order is False else 32768) | (0 if self.invert_media is None or self.invert_media is False else 65536) | (0 if self.allow_paid_floodskip is None or self.allow_paid_floodskip is False else 524288) | (0 if self.reply_to is None or self.reply_to is False else 1) | (0 if self.reply_markup is None or self.reply_markup is False else 4) | (0 if self.entities is None or self.entities is False else 8) | (0 if self.schedule_date is None or self.schedule_date is False else 1024) | (0 if self.schedule_repeat_period is None or self.schedule_repeat_period is False else 16777216) | (0 if self.send_as is None or self.send_as is False else 8192) | (0 if self.quick_reply_shortcut is None or self.quick_reply_shortcut is False else 131072) | (0 if self.effect is None or self.effect is False else 262144) | (0 if self.allow_paid_stars is None or self.allow_paid_stars is False else 2097152) | (0 if self.suggested_post is None or self.suggested_post is False else 4194304)),
+            b'b\x8f\xf4\xfe',
+            struct.pack('<I', (0 if self.no_webpage is None or self.no_webpage is False else 2) | (0 if self.silent is None or self.silent is False else 32) | (0 if self.background is None or self.background is False else 64) | (0 if self.clear_draft is None or self.clear_draft is False else 128) | (0 if self.noforwards is None or self.noforwards is False else 16384) | (0 if self.update_stickersets_order is None or self.update_stickersets_order is False else 32768) | (0 if self.invert_media is None or self.invert_media is False else 65536) | (0 if self.allow_paid_floodskip is None or self.allow_paid_floodskip is False else 524288) | (0 if self.reply_to is None or self.reply_to is False else 1) | (0 if self.reply_markup is None or self.reply_markup is False else 4) | (0 if self.entities is None or self.entities is False else 8) | (0 if self.schedule_date is None or self.schedule_date is False else 1024) | (0 if self.schedule_repeat_period is None or self.schedule_repeat_period is False else 16777216) | (0 if self.send_as is None or self.send_as is False else 8192) | (0 if self.quick_reply_shortcut is None or self.quick_reply_shortcut is False else 131072) | (0 if self.effect is None or self.effect is False else 262144) | (0 if self.allow_paid_stars is None or self.allow_paid_stars is False else 2097152) | (0 if self.suggested_post is None or self.suggested_post is False else 4194304) | (0 if self.rich_message is None or self.rich_message is False else 8388608)),
             self.peer._bytes(),
             b'' if self.reply_to is None or self.reply_to is False else (self.reply_to._bytes()),
             self.serialize_bytes(self.message),
@@ -8680,6 +8738,7 @@ class SendMessageRequest(TLRequest):
             b'' if self.effect is None or self.effect is False else (struct.pack('<q', self.effect)),
             b'' if self.allow_paid_stars is None or self.allow_paid_stars is False else (struct.pack('<q', self.allow_paid_stars)),
             b'' if self.suggested_post is None or self.suggested_post is False else (self.suggested_post._bytes()),
+            b'' if self.rich_message is None or self.rich_message is False else (self.rich_message._bytes()),
         ))
 
     @classmethod
@@ -8742,7 +8801,11 @@ class SendMessageRequest(TLRequest):
             _suggested_post = reader.tgread_object()
         else:
             _suggested_post = None
-        return cls(peer=_peer, message=_message, no_webpage=_no_webpage, silent=_silent, background=_background, clear_draft=_clear_draft, noforwards=_noforwards, update_stickersets_order=_update_stickersets_order, invert_media=_invert_media, allow_paid_floodskip=_allow_paid_floodskip, reply_to=_reply_to, random_id=_random_id, reply_markup=_reply_markup, entities=_entities, schedule_date=_schedule_date, schedule_repeat_period=_schedule_repeat_period, send_as=_send_as, quick_reply_shortcut=_quick_reply_shortcut, effect=_effect, allow_paid_stars=_allow_paid_stars, suggested_post=_suggested_post)
+        if flags & 8388608:
+            _rich_message = reader.tgread_object()
+        else:
+            _rich_message = None
+        return cls(peer=_peer, message=_message, no_webpage=_no_webpage, silent=_silent, background=_background, clear_draft=_clear_draft, noforwards=_noforwards, update_stickersets_order=_update_stickersets_order, invert_media=_invert_media, allow_paid_floodskip=_allow_paid_floodskip, reply_to=_reply_to, random_id=_random_id, reply_markup=_reply_markup, entities=_entities, schedule_date=_schedule_date, schedule_repeat_period=_schedule_repeat_period, send_as=_send_as, quick_reply_shortcut=_quick_reply_shortcut, effect=_effect, allow_paid_stars=_allow_paid_stars, suggested_post=_suggested_post, rich_message=_rich_message)
 
 
 class SendMultiMediaRequest(TLRequest):

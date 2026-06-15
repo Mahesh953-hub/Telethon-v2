@@ -6,7 +6,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeBotCommand, TypeBotCommandScope, TypeBotMenuButton, TypeChatAdminRights, TypeDataJSON, TypeEmojiStatus, TypeInputMedia, TypeInputPeer, TypeInputUser, TypeKeyboardButton
+    from ...tl.types import TypeBotCommand, TypeBotCommandScope, TypeBotMenuButton, TypeChatAdminRights, TypeDataJSON, TypeEmojiStatus, TypeInputMedia, TypeInputPeer, TypeInputUser, TypeJoinChatBotResult, TypeKeyboardButton
 
 
 
@@ -1232,6 +1232,38 @@ class SetCustomVerificationRequest(TLRequest):
         else:
             _custom_description = None
         return cls(peer=_peer, enabled=_enabled, bot=_bot, custom_description=_custom_description)
+
+
+class SetJoinChatResultsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0xe71a4810
+    SUBCLASS_OF_ID = 0xf5b399ac
+
+    def __init__(self, query_id: int, result: 'TypeJoinChatBotResult'):
+        """
+        :returns Bool: This type has no constructors.
+        """
+        self.query_id = query_id
+        self.result = result
+
+    def to_dict(self):
+        return {
+            '_': 'SetJoinChatResultsRequest',
+            'query_id': self.query_id,
+            'result': self.result.to_dict() if isinstance(self.result, TLObject) else self.result
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\x10H\x1a\xe7',
+            struct.pack('<q', self.query_id),
+            self.result._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _query_id = reader.read_long()
+        _result = reader.tgread_object()
+        return cls(query_id=_query_id, result=_result)
 
 
 class ToggleUserEmojiStatusPermissionRequest(TLRequest):

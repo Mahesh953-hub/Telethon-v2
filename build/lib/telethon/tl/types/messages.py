@@ -5,7 +5,7 @@ import os
 import struct
 from datetime import datetime
 if TYPE_CHECKING:
-    from ...tl.types import TypeAvailableEffect, TypeAvailableReaction, TypeBotApp, TypeBotInlineResult, TypeChat, TypeChatAdminWithInvites, TypeChatFull, TypeChatInviteImporter, TypeDialog, TypeDialogFilter, TypeDocument, TypeEmojiGroup, TypeEncryptedFile, TypeExportedChatInvite, TypeForumTopic, TypeHighScore, TypeInlineBotSwitchPM, TypeInlineBotWebView, TypeInlineQueryPeerType, TypeMessage, TypeMessageMedia, TypeMessagePeerReaction, TypeMessagePeerVote, TypeMessageViews, TypeMessagesFilter, TypeMissingInvitee, TypePeerSettings, TypeQuickReply, TypeReaction, TypeSavedDialog, TypeSavedReactionTag, TypeSearchPostsFlood, TypeSearchResultsCalendarPeriod, TypeSearchResultsPosition, TypeSponsoredMessage, TypeStickerKeyword, TypeStickerPack, TypeStickerSet, TypeStickerSetCovered, TypeTextWithEntities, TypeUpdates, TypeUser, TypeWebPage
+    from ...tl.types import TypeAvailableEffect, TypeAvailableReaction, TypeBotApp, TypeBotInlineResult, TypeChat, TypeChatAdminWithInvites, TypeChatFull, TypeChatInviteImporter, TypeDialog, TypeDialogFilter, TypeDocument, TypeEmojiGroup, TypeEncryptedFile, TypeExportedChatInvite, TypeForumTopic, TypeHighScore, TypeInlineBotSwitchPM, TypeInlineBotWebView, TypeInlineQueryPeerType, TypeMessage, TypeMessageMedia, TypeMessagePeerReaction, TypeMessagePeerVote, TypeMessageViews, TypeMessagesFilter, TypeMissingInvitee, TypePeerSettings, TypeQuickReply, TypeReaction, TypeSavedDialog, TypeSavedReactionTag, TypeSearchPostsFlood, TypeSearchResultsCalendarPeriod, TypeSearchResultsPosition, TypeSponsoredMessage, TypeStickerKeyword, TypeStickerPack, TypeStickerSet, TypeStickerSetCovered, TypeTextWithEntities, TypeUpdates, TypeUser, TypeWebPage, TypeWebViewResult
     from ...tl.types.updates import TypeState
 
 
@@ -753,6 +753,75 @@ class ChatInviteImporters(TLObject):
             _users.append(_x)
 
         return cls(count=_count, importers=_importers, users=_users)
+
+
+class ChatInviteJoinResultOk(TLObject):
+    CONSTRUCTOR_ID = 0x445663a7
+    SUBCLASS_OF_ID = 0x5d0ff992
+
+    def __init__(self, updates: 'TypeUpdates'):
+        """
+        Constructor for messages.ChatInviteJoinResult: Instance of either ChatInviteJoinResultOk, ChatInviteJoinResultWebView.
+        """
+        self.updates = updates
+
+    def to_dict(self):
+        return {
+            '_': 'ChatInviteJoinResultOk',
+            'updates': self.updates.to_dict() if isinstance(self.updates, TLObject) else self.updates
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xa7cVD',
+            self.updates._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _updates = reader.tgread_object()
+        return cls(updates=_updates)
+
+
+class ChatInviteJoinResultWebView(TLObject):
+    CONSTRUCTOR_ID = 0x2f51c337
+    SUBCLASS_OF_ID = 0x5d0ff992
+
+    def __init__(self, bot_id: int, webview: 'TypeWebViewResult', users: List['TypeUser']):
+        """
+        Constructor for messages.ChatInviteJoinResult: Instance of either ChatInviteJoinResultOk, ChatInviteJoinResultWebView.
+        """
+        self.bot_id = bot_id
+        self.webview = webview
+        self.users = users
+
+    def to_dict(self):
+        return {
+            '_': 'ChatInviteJoinResultWebView',
+            'bot_id': self.bot_id,
+            'webview': self.webview.to_dict() if isinstance(self.webview, TLObject) else self.webview,
+            'users': [] if self.users is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.users]
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'7\xc3Q/',
+            struct.pack('<q', self.bot_id),
+            self.webview._bytes(),
+            b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.users)),b''.join(x._bytes() for x in self.users),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _bot_id = reader.read_long()
+        _webview = reader.tgread_object()
+        reader.read_int()
+        _users = []
+        for _ in range(reader.read_int()):
+            _x = reader.tgread_object()
+            _users.append(_x)
+
+        return cls(bot_id=_bot_id, webview=_webview, users=_users)
 
 
 class Chats(TLObject):

@@ -243,6 +243,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         report_delivery_until_date: Optional[datetime] = None,
         paid_message_stars: Optional[int] = None,
         suggested_post: Optional[types.TypeSuggestedPost] = None,
+        rich_message: Optional[types.RichMessage] = None,
         schedule_repeat_period: Optional[int] = None,
         summary_from_language: Optional[str] = None,
         # Copied from MessageService.__init__ signature
@@ -301,6 +302,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         # Copied from MessageService.__init__ body
         self.action = action
         self.reactions_are_possible = reactions_are_possible
+        self.rich_message = rich_message
 
         # Convenient storage for custom functions
         # TODO This is becoming a bit of bloat

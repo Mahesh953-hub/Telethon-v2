@@ -210,6 +210,37 @@ class ClearRecentEmojiStatusesRequest(TLRequest):
         return cls()
 
 
+class ConfirmBotConnectionRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x67ed1f68
+    SUBCLASS_OF_ID = 0xf5b399ac
+
+    def __init__(self, bot_id: 'TypeInputUser'):
+        """
+        :returns Bool: This type has no constructors.
+        """
+        self.bot_id = bot_id
+
+    async def resolve(self, client, utils):
+        self.bot_id = utils.get_input_user(await client.get_input_entity(self.bot_id))
+
+    def to_dict(self):
+        return {
+            '_': 'ConfirmBotConnectionRequest',
+            'bot_id': self.bot_id.to_dict() if isinstance(self.bot_id, TLObject) else self.bot_id
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'h\x1f\xedg',
+            self.bot_id._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _bot_id = reader.tgread_object()
+        return cls(bot_id=_bot_id)
+
+
 class ConfirmPasswordEmailRequest(TLRequest):
     CONSTRUCTOR_ID = 0x8fdf1920
     SUBCLASS_OF_ID = 0xf5b399ac
@@ -519,6 +550,25 @@ class DeleteSecureValueRequest(TLRequest):
             _types.append(_x)
 
         return cls(types=_types)
+
+
+class DeleteWebBrowserSettingsExceptionsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x86a0765d
+    SUBCLASS_OF_ID = 0x44799578
+
+    def to_dict(self):
+        return {
+            '_': 'DeleteWebBrowserSettingsExceptionsRequest'
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b']v\xa0\x86',
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        return cls()
 
 
 class DisablePeerConnectedBotRequest(TLRequest):
@@ -1678,6 +1728,34 @@ class GetWebAuthorizationsRequest(TLRequest):
     @classmethod
     def from_reader(cls, reader):
         return cls()
+
+
+class GetWebBrowserSettingsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x56655768
+    SUBCLASS_OF_ID = 0x44799578
+
+    def __init__(self, hash: int):
+        """
+        :returns account.WebBrowserSettings: Instance of either WebBrowserSettingsNotModified, WebBrowserSettings.
+        """
+        self.hash = hash
+
+    def to_dict(self):
+        return {
+            '_': 'GetWebBrowserSettingsRequest',
+            'hash': self.hash
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'hWeV',
+            struct.pack('<q', self.hash),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _hash = reader.read_long()
+        return cls(hash=_hash)
 
 
 class InitPasskeyRegistrationRequest(TLRequest):
@@ -3022,6 +3100,47 @@ class ToggleUsernameRequest(TLRequest):
         return cls(username=_username, active=_active)
 
 
+class ToggleWebBrowserSettingsExceptionRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x60ed4229
+    SUBCLASS_OF_ID = 0x8af52aac
+
+    def __init__(self, url: str, delete: Optional[bool]=None, open_external_browser: Optional[bool]=None):
+        """
+        :returns Updates: Instance of either UpdatesTooLong, UpdateShortMessage, UpdateShortChatMessage, UpdateShort, UpdatesCombined, Updates, UpdateShortSentMessage.
+        """
+        self.url = url
+        self.delete = delete
+        self.open_external_browser = open_external_browser
+
+    def to_dict(self):
+        return {
+            '_': 'ToggleWebBrowserSettingsExceptionRequest',
+            'url': self.url,
+            'delete': self.delete,
+            'open_external_browser': self.open_external_browser
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b')B\xed`',
+            struct.pack('<I', (0 if self.delete is None or self.delete is False else 2) | (0 if self.open_external_browser is None else 1)),
+            b'' if self.open_external_browser is None else (b'\xb5ur\x99' if self.open_external_browser else b'7\x97y\xbc'),
+            self.serialize_bytes(self.url),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _delete = bool(flags & 2)
+        if flags & 1:
+            _open_external_browser = reader.tgread_bool()
+        else:
+            _open_external_browser = None
+        _url = reader.tgread_string()
+        return cls(url=_url, delete=_delete, open_external_browser=_open_external_browser)
+
+
 class UnregisterDeviceRequest(TLRequest):
     CONSTRUCTOR_ID = 0x6a0d3206
     SUBCLASS_OF_ID = 0xf5b399ac
@@ -3687,6 +3806,39 @@ class UpdateUsernameRequest(TLRequest):
     def from_reader(cls, reader):
         _username = reader.tgread_string()
         return cls(username=_username)
+
+
+class UpdateWebBrowserSettingsRequest(TLRequest):
+    CONSTRUCTOR_ID = 0x9adf82fe
+    SUBCLASS_OF_ID = 0x44799578
+
+    def __init__(self, open_external_browser: Optional[bool]=None, display_close_button: Optional[bool]=None):
+        """
+        :returns account.WebBrowserSettings: Instance of either WebBrowserSettingsNotModified, WebBrowserSettings.
+        """
+        self.open_external_browser = open_external_browser
+        self.display_close_button = display_close_button
+
+    def to_dict(self):
+        return {
+            '_': 'UpdateWebBrowserSettingsRequest',
+            'open_external_browser': self.open_external_browser,
+            'display_close_button': self.display_close_button
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xfe\x82\xdf\x9a',
+            struct.pack('<I', (0 if self.open_external_browser is None or self.open_external_browser is False else 1) | (0 if self.display_close_button is None or self.display_close_button is False else 2)),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        flags = reader.read_int()
+
+        _open_external_browser = bool(flags & 1)
+        _display_close_button = bool(flags & 2)
+        return cls(open_external_browser=_open_external_browser, display_close_button=_display_close_button)
 
 
 class UploadRingtoneRequest(TLRequest):
