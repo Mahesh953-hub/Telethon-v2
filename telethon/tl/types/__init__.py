@@ -18807,6 +18807,70 @@ class InputReportReasonViolence(TLObject):
         return cls()
 
 
+class InputRichFileDocument(TLObject):
+    CONSTRUCTOR_ID = 0x83281dbd
+    SUBCLASS_OF_ID = 0x94e416e6
+
+    def __init__(self, id: str, document: 'TypeInputDocument'):
+        """
+        Constructor for InputRichFile: Instance of either InputRichFilePhoto, InputRichFileDocument.
+        """
+        self.id = id
+        self.document = document
+
+    def to_dict(self):
+        return {
+            '_': 'InputRichFileDocument',
+            'id': self.id,
+            'document': self.document.to_dict() if isinstance(self.document, TLObject) else self.document
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'\xbd\x1d(\x83',
+            self.serialize_bytes(self.id),
+            self.document._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _id = reader.tgread_string()
+        _document = reader.tgread_object()
+        return cls(id=_id, document=_document)
+
+
+class InputRichFilePhoto(TLObject):
+    CONSTRUCTOR_ID = 0x9b00622b
+    SUBCLASS_OF_ID = 0x94e416e6
+
+    def __init__(self, id: str, photo: 'TypeInputPhoto'):
+        """
+        Constructor for InputRichFile: Instance of either InputRichFilePhoto, InputRichFileDocument.
+        """
+        self.id = id
+        self.photo = photo
+
+    def to_dict(self):
+        return {
+            '_': 'InputRichFilePhoto',
+            'id': self.id,
+            'photo': self.photo.to_dict() if isinstance(self.photo, TLObject) else self.photo
+        }
+
+    def _bytes(self):
+        return b''.join((
+            b'+b\x00\x9b',
+            self.serialize_bytes(self.id),
+            self.photo._bytes(),
+        ))
+
+    @classmethod
+    def from_reader(cls, reader):
+        _id = reader.tgread_string()
+        _photo = reader.tgread_object()
+        return cls(id=_id, photo=_photo)
+
+
 class InputRichMessage(TLObject):
     CONSTRUCTOR_ID = 0xe4c449fc
     SUBCLASS_OF_ID = 0x55a7b313
@@ -18886,19 +18950,17 @@ class InputRichMessage(TLObject):
 
 
 class InputRichMessageHTML(TLObject):
-    CONSTRUCTOR_ID = 0xd4eab551
+    CONSTRUCTOR_ID = 0xdacb836a
     SUBCLASS_OF_ID = 0x55a7b313
 
-    def __init__(self, html: str, rtl: Optional[bool]=None, noautolink: Optional[bool]=None, photos: Optional[List['TypeInputPhoto']]=None, documents: Optional[List['TypeInputDocument']]=None, users: Optional[List['TypeInputUser']]=None):
+    def __init__(self, html: str, rtl: Optional[bool]=None, noautolink: Optional[bool]=None, files: Optional[List['TypeInputRichFile']]=None):
         """
         Constructor for InputRichMessage: Instance of either InputRichMessage, InputRichMessageHTML, InputRichMessageMarkdown.
         """
         self.html = html
         self.rtl = rtl
         self.noautolink = noautolink
-        self.photos = photos
-        self.documents = documents
-        self.users = users
+        self.files = files
 
     def to_dict(self):
         return {
@@ -18906,19 +18968,15 @@ class InputRichMessageHTML(TLObject):
             'html': self.html,
             'rtl': self.rtl,
             'noautolink': self.noautolink,
-            'photos': [] if self.photos is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.photos],
-            'documents': [] if self.documents is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.documents],
-            'users': [] if self.users is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.users]
+            'files': [] if self.files is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.files]
         }
 
     def _bytes(self):
         return b''.join((
-            b'Q\xb5\xea\xd4',
-            struct.pack('<I', (0 if self.rtl is None or self.rtl is False else 1) | (0 if self.noautolink is None or self.noautolink is False else 2) | (0 if self.photos is None or self.photos is False else 4) | (0 if self.documents is None or self.documents is False else 8) | (0 if self.users is None or self.users is False else 16)),
+            b'j\x83\xcb\xda',
+            struct.pack('<I', (0 if self.rtl is None or self.rtl is False else 1) | (0 if self.noautolink is None or self.noautolink is False else 2) | (0 if self.files is None or self.files is False else 4)),
             self.serialize_bytes(self.html),
-            b'' if self.photos is None or self.photos is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.photos)),b''.join(x._bytes() for x in self.photos))),
-            b'' if self.documents is None or self.documents is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.documents)),b''.join(x._bytes() for x in self.documents))),
-            b'' if self.users is None or self.users is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.users)),b''.join(x._bytes() for x in self.users))),
+            b'' if self.files is None or self.files is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.files)),b''.join(x._bytes() for x in self.files))),
         ))
 
     @classmethod
@@ -18930,48 +18988,28 @@ class InputRichMessageHTML(TLObject):
         _html = reader.tgread_string()
         if flags & 4:
             reader.read_int()
-            _photos = []
+            _files = []
             for _ in range(reader.read_int()):
                 _x = reader.tgread_object()
-                _photos.append(_x)
+                _files.append(_x)
 
         else:
-            _photos = None
-        if flags & 8:
-            reader.read_int()
-            _documents = []
-            for _ in range(reader.read_int()):
-                _x = reader.tgread_object()
-                _documents.append(_x)
-
-        else:
-            _documents = None
-        if flags & 16:
-            reader.read_int()
-            _users = []
-            for _ in range(reader.read_int()):
-                _x = reader.tgread_object()
-                _users.append(_x)
-
-        else:
-            _users = None
-        return cls(html=_html, rtl=_rtl, noautolink=_noautolink, photos=_photos, documents=_documents, users=_users)
+            _files = None
+        return cls(html=_html, rtl=_rtl, noautolink=_noautolink, files=_files)
 
 
 class InputRichMessageMarkdown(TLObject):
-    CONSTRUCTOR_ID = 0x9ac8186
+    CONSTRUCTOR_ID = 0x4b572c
     SUBCLASS_OF_ID = 0x55a7b313
 
-    def __init__(self, markdown: str, rtl: Optional[bool]=None, noautolink: Optional[bool]=None, photos: Optional[List['TypeInputPhoto']]=None, documents: Optional[List['TypeInputDocument']]=None, users: Optional[List['TypeInputUser']]=None):
+    def __init__(self, markdown: str, rtl: Optional[bool]=None, noautolink: Optional[bool]=None, files: Optional[List['TypeInputRichFile']]=None):
         """
         Constructor for InputRichMessage: Instance of either InputRichMessage, InputRichMessageHTML, InputRichMessageMarkdown.
         """
         self.markdown = markdown
         self.rtl = rtl
         self.noautolink = noautolink
-        self.photos = photos
-        self.documents = documents
-        self.users = users
+        self.files = files
 
     def to_dict(self):
         return {
@@ -18979,19 +19017,15 @@ class InputRichMessageMarkdown(TLObject):
             'markdown': self.markdown,
             'rtl': self.rtl,
             'noautolink': self.noautolink,
-            'photos': [] if self.photos is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.photos],
-            'documents': [] if self.documents is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.documents],
-            'users': [] if self.users is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.users]
+            'files': [] if self.files is None else [x.to_dict() if isinstance(x, TLObject) else x for x in self.files]
         }
 
     def _bytes(self):
         return b''.join((
-            b'\x86\x81\xac\t',
-            struct.pack('<I', (0 if self.rtl is None or self.rtl is False else 1) | (0 if self.noautolink is None or self.noautolink is False else 2) | (0 if self.photos is None or self.photos is False else 4) | (0 if self.documents is None or self.documents is False else 8) | (0 if self.users is None or self.users is False else 16)),
+            b',WK\x00',
+            struct.pack('<I', (0 if self.rtl is None or self.rtl is False else 1) | (0 if self.noautolink is None or self.noautolink is False else 2) | (0 if self.files is None or self.files is False else 4)),
             self.serialize_bytes(self.markdown),
-            b'' if self.photos is None or self.photos is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.photos)),b''.join(x._bytes() for x in self.photos))),
-            b'' if self.documents is None or self.documents is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.documents)),b''.join(x._bytes() for x in self.documents))),
-            b'' if self.users is None or self.users is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.users)),b''.join(x._bytes() for x in self.users))),
+            b'' if self.files is None or self.files is False else b''.join((b'\x15\xc4\xb5\x1c',struct.pack('<i', len(self.files)),b''.join(x._bytes() for x in self.files))),
         ))
 
     @classmethod
@@ -19003,32 +19037,14 @@ class InputRichMessageMarkdown(TLObject):
         _markdown = reader.tgread_string()
         if flags & 4:
             reader.read_int()
-            _photos = []
+            _files = []
             for _ in range(reader.read_int()):
                 _x = reader.tgread_object()
-                _photos.append(_x)
+                _files.append(_x)
 
         else:
-            _photos = None
-        if flags & 8:
-            reader.read_int()
-            _documents = []
-            for _ in range(reader.read_int()):
-                _x = reader.tgread_object()
-                _documents.append(_x)
-
-        else:
-            _documents = None
-        if flags & 16:
-            reader.read_int()
-            _users = []
-            for _ in range(reader.read_int()):
-                _x = reader.tgread_object()
-                _users.append(_x)
-
-        else:
-            _users = None
-        return cls(markdown=_markdown, rtl=_rtl, noautolink=_noautolink, photos=_photos, documents=_documents, users=_users)
+            _files = None
+        return cls(markdown=_markdown, rtl=_rtl, noautolink=_noautolink, files=_files)
 
 
 class InputSavedStarGiftChat(TLObject):
@@ -52166,6 +52182,7 @@ TypeInputPrivacyRule = Union[InputPrivacyValueAllowContacts,InputPrivacyValueAll
 TypeInputQuickReplyShortcut = Union[InputQuickReplyShortcut,InputQuickReplyShortcutId]
 TypeInputReplyTo = Union[InputReplyToMessage,InputReplyToStory,InputReplyToMonoForum]
 TypeReportReason = Union[InputReportReasonSpam,InputReportReasonViolence,InputReportReasonPornography,InputReportReasonChildAbuse,InputReportReasonOther,InputReportReasonCopyright,InputReportReasonGeoIrrelevant,InputReportReasonFake,InputReportReasonIllegalDrugs,InputReportReasonPersonalDetails]
+TypeInputRichFile = Union[InputRichFilePhoto,InputRichFileDocument]
 TypeInputRichMessage = Union[InputRichMessage,InputRichMessageHTML,InputRichMessageMarkdown]
 TypeInputSavedStarGift = Union[InputSavedStarGiftUser,InputSavedStarGiftChat,InputSavedStarGiftSlug]
 TypeInputSecureFile = Union[InputSecureFileUploaded,InputSecureFile]
